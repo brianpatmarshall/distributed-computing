@@ -1,0 +1,82 @@
+gitGraph
+    commit id: "Initial commit"
+    commit id: "Setup project"
+
+    branch user_story_101
+    checkout user_story_101
+    commit id: "US-101: Add login form"
+    commit id: "US-101: Add validation"
+
+    checkout main
+    merge user_story_101
+    commit id: "Update dependencies"
+
+    branch user_story_102
+    checkout user_story_102
+    commit id: "US-102: User dashboard"
+    commit id: "US-102: Add widgets"
+
+    checkout main
+    branch user_story_103
+    checkout user_story_103
+    commit id: "US-103: Search feature"
+
+    checkout main
+    merge user_story_102
+    commit id: "Fix integration tests"
+
+    branch October
+    checkout October
+    commit id: "October release prep"
+
+    checkout main
+    merge user_story_103
+    commit id: "Update documentation"
+
+    branch user_story_104
+    checkout user_story_104
+    commit id: "US-104: Payment system"
+    commit id: "US-104: Add Stripe integration"
+
+    checkout main
+    branch user_story_105
+    checkout user_story_105
+    commit id: "US-105: Email notifications"
+
+    checkout October
+    cherry-pick id: "US-101: Add validation"
+    cherry-pick id: "US-102: Add widgets"
+    commit id: "October hotfix: Security patch"
+
+    checkout main
+    merge user_story_104
+    commit id: "Performance optimizations"
+
+    checkout main
+    merge user_story_105
+
+    branch November
+    checkout November
+    commit id: "November release prep"
+
+    branch user_story_106
+    checkout user_story_106
+    commit id: "US-106: Admin panel"
+    commit id: "US-106: User management"
+
+    checkout November
+    cherry-pick id: "US-104: Payment system"
+    cherry-pick id: "US-105: Email notifications"
+
+    checkout October
+    commit id: "October final release"
+
+    checkout main
+    merge user_story_106
+    commit id: "Code cleanup"
+
+    branch user_story_107
+    checkout user_story_107
+    commit id: "US-107: Mobile responsive"
+
+    checkout November

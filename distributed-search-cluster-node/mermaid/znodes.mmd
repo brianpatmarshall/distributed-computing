@@ -1,0 +1,27 @@
+flowchart TD
+    A["/"] --> B["/election"]
+    A --> C["/workers_service_registry"]
+    A --> D["/coordinators_service_registry"]
+
+    B --> E["/app/workers"]
+    B --> F["/app/coordinators"]
+
+    E --> G["/app/workers/worker_1"]
+    E --> H["/app/workers/worker_2"]
+    E --> I["/app/workers/worker_3"]
+
+    F --> J["/app/coordinators/coord_1"]
+
+    C --> K["/zookeeper/quota"]
+
+    D --> L["/config/database"]
+    D --> M["/config/search"]
+
+%% Style different node types
+    classDef persistent fill:#e1f5fe
+    classDef ephemeral fill:#fff3e0
+    classDef sequential fill:#f3e5f5
+
+    class A,B,C,D,L,M persistent
+    class G,H,I,J ephemeral
+    class E,F sequential

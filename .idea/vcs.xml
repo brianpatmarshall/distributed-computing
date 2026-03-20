@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/distributed-search-frontend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/distributed-search-worker-node" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/leader-reelection" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/service-registry" vcs="Git" />
+  </component>
+</project>

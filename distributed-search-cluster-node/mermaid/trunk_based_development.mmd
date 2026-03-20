@@ -1,0 +1,111 @@
+%%{init: {
+ 'theme': 'default
+  ',
+ 'themeVariables': {
+   'darkMode': true,
+   'background': '#2d3436',
+   'primaryColor': '#00b894',
+   'primaryTextColor': '#ffffff',
+   'primaryBorderColor': '#00a085',
+   'lineColor': '#74b9ff',
+   'secondaryColor': '#fd79a8',
+   'tertiaryColor': '#fdcb6e',
+   'mainBranchName': 'main',
+   'cScale0': '#00b894',
+   'cScale1': '#e84393',
+   'cScale2': '#fdcb6e',
+   'cScale3': '#6c5ce7',
+   'cScale4': '#fd79a8',
+   'cScale5': '#00cec9',
+   'cScale6': '#a29bfe',
+   'git0': '#00b894',
+   'git1': '#e84393',
+   'git2': '#fdcb6e',
+   'git3': '#6c5ce7',
+   'git4': '#fd79a8',
+   'git5': '#00cec9',
+   'git6': '#a29bfe',
+   'commitLabelFontSize': '12px',
+   'commitLabelBackground': '#2d3436',
+   'commitLabelColor': '#ffffff'
+ }
+}}%%
+
+gitGraph
+    commit id: "Initial commit"
+    commit id: "Setup feature flags"
+
+    branch user_story_101
+    checkout user_story_101
+    commit id: "US-101: Login (behind flag)"
+    commit id: "US-101: Add validation"
+
+    checkout main
+    merge user_story_101
+    commit id: "Enable login for October"
+
+    branch user_story_102
+    checkout user_story_102
+    commit id: "US-102: Dashboard (Nov flag)"
+    commit id: "US-102: Add widgets"
+
+    checkout main
+    merge user_story_102
+    commit id: "Dashboard in trunk (disabled)"
+
+    branch user_story_103
+    checkout user_story_103
+    commit id: "US-103: Search (Oct flag)"
+
+    checkout main
+    merge user_story_103
+    commit id: "All features in trunk"
+
+    branch October
+    checkout October
+    commit id: "🚀 **OCTOBER CONFIG**: login=ON"
+    commit id: "🎯 **OCTOBER RELEASE**" type: HIGHLIGHT
+
+    checkout main
+    branch user_story_104
+    checkout user_story_104
+    commit id: "US-104: Payments (Nov flag)"
+    commit id: "US-104: Stripe integration"
+
+    checkout main
+    merge user_story_104
+    commit id: "Payments in trunk (disabled)"
+
+    branch user_story_105
+    checkout user_story_105
+    commit id: "US-105: Notifications (Nov flag)"
+
+    checkout main
+    merge user_story_105
+    commit id: "Enable dashboard for November"
+
+    branch November
+    checkout November
+    commit id: "🚀 **NOVEMBER CONFIG**: all=ON"
+    commit id: "🎯 **NOVEMBER RELEASE**" type: HIGHLIGHT
+
+    checkout main
+    commit id: "Enable payments for all users"
+
+    branch user_story_106
+    checkout user_story_106
+    commit id: "US-106: Admin panel (Dec flag)"
+
+    checkout main
+    merge user_story_106
+    commit id: "Admin in trunk (disabled)"
+
+    checkout October
+    commit id: "🔧 **OCT HOTFIX**: login bug" type: REVERSE
+
+    checkout November
+    commit id: "🔧 **NOV HOTFIX**: dashboard fix" type: REVERSE
+
+    checkout main
+    commit id: "Remove old feature flags"
+    commit id: "Latest trunk"

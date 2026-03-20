@@ -1,0 +1,41 @@
+services:
+  zookeeper:
+    image: zookeeper:3.9.3
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_TICK_TIME: 2000
+      ZOO_INIT_LIMIT: 5
+      ZOO_SYNC_LIMIT: 2
+      ZOO_4LW_COMMANDS_WHITELIST: ruok
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  worker-manager:
+    build:
+      context: .
+      dockerfile: example/Dockerfile
+    container_name: worker-manager
+    # The manager runs inside the container and spawns worker processes as
+    # child JVMs. "3" is the target pool size, "zookeeper:2181" is the
+    # ZooKeeper address reachable via Docker networking.
+    command: ["3", "zookeeper:2181"]
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: example/Dockerfile.dashboard
+    container_name: dashboard-api
+    ports:
+      - "8085:8085"
+    command: ["8085", "3", "zookeeper:2181"]
+    depends_on:
+      zookeeper:
+        condition: service_healthy
