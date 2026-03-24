@@ -1,0 +1,164 @@
+# Constants Catalog - Docker Compose Configuration
+# ================================================
+# This file orchestrates the complete application stack:
+# - Neo4J: Graph database for storing constants and parameters
+# - ValKey: Redis-compatible distributed configuration store
+# - Backend: Spring Boot REST API
+# - Frontend: React UI with Space Command theme
+#
+# Environment Variables (create a .env file or export these):
+# ----------------------------------------------------------
+#   HOST_SRC_PATH - Path to source code directory for scanning
+#
+#   Windows (MSYS2/PowerShell):
+#     HOST_SRC_PATH=C:/Users/ju516f/src
+#
+#   WSL2 Ubuntu:
+#     HOST_SRC_PATH=/mnt/c/Users/ju516f/src
+#
+#   Linux native:
+#     HOST_SRC_PATH=/home/ju516f/src
+#
+# Usage:
+#   docker-compose up -d        # Start all services
+#   docker-compose logs -f      # View logs
+#   docker-compose down         # Stop all services
+#   docker-compose down -v      # Stop and remove volumes
+#
+# ValKey CLI:
+#   docker-compose run --rm valkey-cli                    # Interactive CLI
+#   docker-compose exec valkey valkey-cli                 # CLI via exec
+#   docker-compose exec valkey valkey-cli PING            # Single command
+#   docker-compose exec valkey valkey-cli KEYS "config:*" # List config keys
+#   docker-compose exec valkey valkey-cli GET config:smtp.host  # Get a value
+
+services:
+  # ValKey (Redis-compatible)
+  # -------------------------
+  # Distributed configuration store with pub/sub support for cache invalidation.
+  # ValKey is a Redis-compatible in-memory data store, perfect for configuration
+  # values that need to be shared across application instances.
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: const-catalog-valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    command: ["valkey-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - const-catalog-network
+
+  # ValKey CLI
+  # ----------
+  # On-demand CLI for interacting with ValKey. Run with:
+  #   docker-compose run --rm valkey-cli
+  valkey-cli:
+    image: valkey/valkey:8-alpine
+    container_name: const-catalog-valkey-cli
+    profiles:
+      - cli
+      - tools
+    depends_on:
+      valkey:
+        condition: service_healthy
+    networks:
+      - const-catalog-network
+    entrypoint: ["valkey-cli", "-h", "valkey"]
+    stdin_open: true
+    tty: true
+
+  # Neo4J Graph Database
+  # --------------------
+  # The persistent store for our configuration graph. We use the community
+  # edition with authentication disabled for local development.
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: const-catalog-neo4j
+    ports:
+      - "7474:7474"  # HTTP (Browser interface)
+      - "7687:7687"  # Bolt (Driver connections)
+    environment:
+      - NEO4J_AUTH=none
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - const-catalog-network
+
+  # Backend API Server
+  # ------------------
+  # Spring Boot application providing REST endpoints for scanning
+  # and querying. Connects to Neo4J via Bolt protocol.
+  backend:
+    build:
+      context: .
+      dockerfile: const-catalog-backend/Dockerfile
+    container_name: const-catalog-backend
+    ports:
+      - "9090:8080"
+      - "5005:5005"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - SPRING_PROFILES_ACTIVE=docker
+      - VALKEY_HOST=valkey
+      - VALKEY_PORT=6379
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    volumes:
+      # Mount project directories for scanning and branch creation.
+      # Read-write access is needed for the "Create New Branch" feature
+      # which runs git operations in the target project.
+      - ./projects:/projects
+      - ${HOST_SRC_PATH:-/src}:/src
+      # Writable directory for transform backups and output.
+      # The host directory is auto-created by Docker Compose if missing,
+      # but will be owned by root. The init container approach below avoids this;
+      # alternatively, run 'mkdir -p backups && chmod 777 backups' on the host once.
+      - ./backups:/app/backups
+    networks:
+      - const-catalog-network
+
+  # Frontend UI
+  # -----------
+  # React application with the Space Command theme. Served via nginx
+  # in production mode.
+  frontend:
+    build:
+      context: ./const-catalog-frontend
+      dockerfile: Dockerfile
+    container_name: const-catalog-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - const-catalog-network
+
+networks:
+  const-catalog-network:
+    driver: bridge
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  valkey_data:
