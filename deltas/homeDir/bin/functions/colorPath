@@ -1,0 +1,9 @@
+colorPath()
+{
+   local newPathColor=${1:?Usage: colorCMD pathColor}
+   local currentPathColor=$(colorCurrent | awk '{print $3}')
+	 
+	 box colorPrompt $(colorCurrent | sed "s/$currentPathColor/$newPathColor/")
+	 colorPrompt $(colorCurrent | sed "s/$currentPathColor/$newPathColor/")
+}
+

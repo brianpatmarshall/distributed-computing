@@ -1,0 +1,83 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : setJavaHome
+# Description     : 
+#
+# Revision History: 
+#
+#   28 Feb 2026 - 
+#      Initial Version.
+#==========================================================================
+#--------------------------------------------------------------------------
+# Function        : removeDups
+# Description     : RemoveDups is a filter; if no command line ars are
+#                   supplied, it reads from STDIN.  
+#                   It will read a delimited string of strings and will 
+#                   remove duplicates while conserving ordering.
+#                   A space is the default delimiter.
+#                   Thus both:
+#                      removeDups -d : a:b:a:c:b
+#                   and
+#                      echo a:b:a:c:b | removeDups -d :
+#                   produce a:b:c
+#--------------------------------------------------------------------------
+delim=':'
+
+#--------------------------------------------------------------------------
+# The -d <delim> let's a user override the delimiter
+#--------------------------------------------------------------------------
+while getopts :d: option
+do
+   case $option in
+     \?) echo "Bad option $OPTARG found.  Bailing"
+         exit 1;;
+      :) echo "Option $OPTARG is missing a parameter.  Bailing"
+         exit 2;;
+      d) delim=$OPTARG;;
+   esac
+done
+
+shift $(( OPTIND - 1 ))
+
+if(( $# > 0 ))
+then
+   #--------------------------------------------------------------------------
+   # Have cmd line args, so convert this case into one with no cmd line args
+   #--------------------------------------------------------------------------
+   echo "$@" | removeDups -d "$delim" 
+else
+   #--------------------------------------------------------------------------
+   # No cmd line args, so read from STDIN
+   # What's going on here?
+   #  1. tr replaces each occurence of $delimiter (: by default) with a newline.
+   #     This places each element of the delimited list on its own line.
+   #  2. nl prepends a line number to remember ordering.  This is important in the 
+   #     second sort.
+   #  3. sort -k2 sorts by field 2.  Remember field 1 is the line number at this
+   #     point and field 2 represents the elements in the list.  Additionally,
+   #     -u (unique) removes duplicates.
+   #  4. Now sort numerically (-n) by the first field ...
+   #  5. ... remove the line number ...
+   #  6. ... put all the elements on the same line with xargs, which is the same
+   #     as "xargs echo".  As we know, echo replaces all white spaces (including
+   #     newline characters) with a single space.
+   #  7. Finally put the delimiter back.
+   #--------------------------------------------------------------------------
+   tr "$delim" '\n' | nl | sort -uk2 | sort -n | awk '{print $2}' | xargs | sed "s/ /$delim/g"
+fi
+
+#==========================================================================
+#				      MAIN
+#==========================================================================
+version=${1:-$(read -p 'Enter Java Version'; echo $REPLY)}
+if [[ $(uname -s) == Linux ]]
+then
+   JAVA_HOME=/opt/java/$version
+else
+   JAVA_HOME=/e/opt/java/$version
+fi
+
+export JAVA_HOME
+export PATH=$(removeDups -d: $JAVA_HOME/bin:$PATH)
+

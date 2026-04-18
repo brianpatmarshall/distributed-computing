@@ -1,0 +1,69 @@
+#! /bin/bash
+# @(#) Find out which of the directories in the passed in, colon separated pathi
+# @(#) exist
+#=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+# File            : checkPath
+# Description     : Find out which of the directories in the passed in, 
+#                   colon separated path exist.
+#                   E.g. checkPath $PATH
+#                   This is useful because often times scripts are moved 
+#                   between machines with different directory structures
+#
+# Revision History: 
+#
+#   01 Feb 2004 - Brian Marshall
+#      Initial Version.
+#=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+#============================================================
+# Function   : hlt 
+# Usage      : hlt
+# Description: turns highlightin on
+#============================================================
+function hlt
+{
+   tput smso
+}
+
+#============================================================
+# Function   : hltOff
+# Usage      : hltOff
+# Description: turns terminal attributes off (bold as well)
+#============================================================
+function hltOff
+{
+   tput rmso
+}
+#--------------------------------------------------------------------------
+# A colon separted list of directories is passed in.  These can be walked
+# in a couple of ways:  Easiest is to set the Input Field Separator (IFS)
+# to ':'.  Another way is to replace each ':' with a space, along the lines
+# of:
+#     for dir in $(echo $1 | tr ':' '\n')
+# or:
+#     for dir in $(echo $1 | sed 's/:/ /g') 
+#--------------------------------------------------------------------------
+# IFS=':'
+# for dir in $1
+# do
+#    if [[ ! -e $dir ]]
+#    then
+#       echo $(hlt)$dir$(hltOff) does $(hlt)NOT$(hltOff) exist
+#    else
+#       echo $dir CHECK
+#    fi
+# done
+export returnValue=0
+echo $* | tr ':' '\n' | sed "s|\~|$HOME|" | while read dir
+                        do
+                          if [[ ! -e "$dir" ]]
+                          then
+                            echo $(hlt)$dir does NOT exist$(hltOff)
+														returnValue=1
+                            echo returnValue set to $returnValue
+                          else
+                            echo $dir CHECK
+                          fi
+                        done
+
+echo returnValue = $returnValue
+exit $returnValue

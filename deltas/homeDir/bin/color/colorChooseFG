@@ -1,0 +1,15 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : colorChooseFG
+# Description     : 
+#
+# Revision History: 
+#
+#   08 Sep 2024 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+fg=$(shuf -n1 ~/.hidden/.favoriteFGs)
+
+box "colorPrompt $fg"
+eval "colorPrompt $fg"

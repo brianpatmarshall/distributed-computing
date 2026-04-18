@@ -1,0 +1,15 @@
+#! /usr/bin/bash
+# @(#) 
+#==========================================================================
+# File            : findDups
+# Description     : Find files that have different names but the same content 
+#
+# Revision History: 
+#
+#   06 Oct 2014 - U-CENTRIPITAL\bmarshall
+#      Initial Version.
+#==========================================================================
+for checksum in $(md5sum * | sort | cut -d' ' -f 1 | uniq -c | grep -v '^ *1' | awk '{print $2}')
+do   
+   md5sum * | grep $checksum 
+done

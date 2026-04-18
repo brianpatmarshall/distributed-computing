@@ -1,0 +1,12 @@
+#============================================================
+# Function:    error
+# Usage   :    error <errorMessage>
+# Description: Print Error Message
+#============================================================
+function error 
+{
+  RED='\033[0;31m'
+	NC='\033[0m' # No Color
+
+	echo -e "${RED}[ERROR]${NC} $*"
+}

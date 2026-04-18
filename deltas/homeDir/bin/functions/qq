@@ -1,0 +1,16 @@
+# @(#) qq strings creates a double quoted string of all passed in parameters
+#==========================================================================
+# Function   : qq (double quote)
+# Usage      : qq <strings>
+# Description: create a string consisting of all passed in parameters 
+#              wrapped in double quotes
+#==========================================================================
+function qq 
+{
+   if [[ -n $1 ]]
+   then
+      echo \"$*\"
+   else
+      sed 's/^/"/' | sed 's/$/"/'
+   fi
+}

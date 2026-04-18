@@ -1,0 +1,21 @@
+# @(#) hlp highlights every occurrence of the passed in pattern
+#======================================================================
+# Function   : hlp (highlight pattern)
+# Usage      : hlp <regEx> [files]
+# Description: hlp is a filter.  It highlights every occurrence of the 
+#              passed in pattern within the named files or from STDIN
+#              if no files are passed as parameters
+#======================================================================
+function hlp
+{
+   local pattern=$1
+   shift             # shift away the pattern
+
+   if [[ -n $1 ]]    # are there any filenames?
+   then
+      sed "s|\($pattern\)|$(hlt)\1$(hltOff)|g" $*
+   else
+      sed "s|\($pattern\)|$(hlt)\1$(hltOff)|g"
+   fi
+
+} 

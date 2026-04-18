@@ -1,0 +1,139 @@
+#! /bin/bash
+#==========================================================================
+# File        : cres
+# Description : Create script.  Prompt for a filename if one isn't specified
+#               on the command line.  Check if the file exists.  Add the basic
+#               lines to the script and then make it executable
+#
+# Revision History: 
+#
+#   10 Aug 1999 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+#--------------------------------------------------------------------------
+# Define the comment character
+#--------------------------------------------------------------------------
+cc='#'
+#--------------------------------------------------------------------------
+# What kind of script hull shall we create?  This can be specified by using
+# the -t option (-t a for awk, -t b for bash and so on).  Default: bash
+#--------------------------------------------------------------------------
+getopts :t: cmdLine
+case "$cmdLine" in
+   t) 
+      case $OPTARG in
+         a) prgm="$(which gawk) -f"       ;;
+         b) prgm=$(which bash)            ;;
+         c) prgm="$(which scala)|!#"; prgm=$(echo $prgm | tr '|' '\n'); cc='//'  ;;
+         e) prgm=$(which escript); cc='%' ;;
+         g) prgm=$(which groovy); cc='//' ;;
+         j) prgm=$(which jython)          ;;
+#        J) prgm=$(which jbang); cc='//'  ;;
+         J) prgm="$(which jshell) -q"; cc='//'  ;;
+         k) prgm=$(which ksh)             ;;
+         n) prgm=$(which node); cc='//'   ;;
+         o) prgm=$(which gosu.sh)         ;;
+         p) prgm=$(which perl)            ;;
+         r) prgm=$(which ruby)            ;;
+         R) prgm=$(which Rscript)         ;;
+         s) prgm="$(which sed) -nf"       ;;
+         S) prgm=$(which scala); cc='//'  ;;
+         t) prgm=$(which tsc); cc='//'    ;;
+         y) prgm=$(which python)          ;;
+         z) prgm=$(which zsh)             ;;
+         ?)  echo "Usage: $(basename $0) [-t [abcegkprRsy]]"; exit ;;
+      esac
+      ;;
+   ?) prgm=$(which bash) ;;
+esac
+
+#--------------------------------------------------------------------------
+# Shift away the -t and option
+#--------------------------------------------------------------------------
+shift $(( OPTIND - 1 ))
+
+#--------------------------------------------------------------------------
+# Get the filename either from the command line if specified or after 
+# prompting the user for it.  Here's how this works: If a command line arg
+# is specified, it is stored in $1.  If this is defined, assign it to
+# fileName.  Otherwise, prompt the user for a fileName (read -p "prompt"),
+# read the user's input into resp and return it.
+#--------------------------------------------------------------------------
+fileName=${1:-$(read -p "Enter fileName: " resp; echo $resp)}
+
+#--------------------------------------------------------------------------
+# Loop until fileName is not empty (-n) and (-a or &&) a file by that name
+# does not exist (! -e)
+#--------------------------------------------------------------------------
+until [[ -n "$fileName" && ! -e "$fileName" ]]
+do
+   #-----------------------------------------------------------------------
+   # If fileName is empty (-z for zero) the re-prompt the user and start
+   # at the top of the loop again (continue)
+   #-----------------------------------------------------------------------
+   if [[ -z "$fileName" ]]; then
+      read -p "Enter fileName: " fileName
+      continue
+   fi
+   #-----------------------------------------------------------------------
+   # If we get here, the file exists, so ask the user if it should be
+   # overwritten. Here 'echo -n' specifies 'no new line' and 
+   # 'read -n 1' reads a single character from stdin into response.
+   # If the user types 'y' or 'Y', break out of the until loop...
+   # Note: the [[ ]] syntax is Korn or Bash syntax, whereas [] is Bourne...
+   #-----------------------------------------------------------------------
+   echo -n "$fileName exists. Overwrite (y/n)? "
+   if [[ $(read -n 1 response; echo $response) == [yY] ]] ; then
+      break
+   fi
+   #-----------------------------------------------------------------------
+   # ... otherwise prompt the user for another file name
+   #-----------------------------------------------------------------------
+   echo
+   read -p "Enter fileName: " fileName
+done
+
+#--------------------------------------------------------------------------
+# Get the user's name, which is field 5 of the /etc/passwd (GCOS). Do 
+# this by grep'ing for the user's id (id -un on Linux) or login name (LOGNAME)
+# in the /etc/passwd file and then cutting out the fifth colon delimited field
+# Linux: userName=$(grep $(id -un) /etc/passwd | cut -d: -f5)
+#--------------------------------------------------------------------------
+userName=$(grep "^$LOGNAME:" /etc/passwd | cut -d: -f5 | sed 's/,.*//')
+read -p "Comment []: " comment
+
+#--------------------------------------------------------------------------
+# An example of a 'here' document.  It says cat (write) to $fileName every
+# thing after the marker EOF and before that same marker.  The '-' (<<-)
+# says that leading tabs are allowed and will be stripped before writing
+# the here document to the file
+#--------------------------------------------------------------------------
+cat > $fileName <<-EOF
+	#! $prgm
+	$cc @(#) $comment
+	$cc==========================================================================
+	$cc File            : $fileName
+	$cc Description     : 
+	$cc
+	$cc Revision History: 
+	$cc
+	$cc   $(date +"%d %h %Y") - $userName
+	$cc      Initial Version.
+	$cc==========================================================================
+	
+	EOF
+
+#--------------------------------------------------------------------------
+# Make the file executable (or chmod u+rwx,go-w,go+rx $fileName)
+#--------------------------------------------------------------------------
+chmod 0755 $fileName
+
+#--------------------------------------------------------------------------
+# 'vi +11 fileName' means vi fileName and place the cursor on line 11.
+# We want to place the cursor on the last line of fileName so that the user
+# can immediately start editing the script.  Therefore first calculate the
+# number of lines in the file: line=$(wc -l $fileName | awk '{print $1}').
+# Then overlay vi : exec vi +$line $fileName.  These two steps can be 
+# combined:
+#--------------------------------------------------------------------------
+exec $EDITOR +$(wc -l $fileName | awk '{print $1}') $fileName

@@ -1,0 +1,18 @@
+colorList()
+{
+    for i in {1..255};
+    do
+		    #-----------------------------------------------------
+				# \033[38;5;<color>m is part of the ANSI escape sequence
+				# that specifies the foreground color using the 256 color
+				# palette. Here '38' indicates we are setting the FG color
+				# and 5;<color> specifies that we're using the 256 color
+				# mode. Note: use 48 instead of 38 to set the BG color.
+				# \033[39m is the ANSI escape sequence to reset the
+				# foreground color to the terminal's default color
+		    #-----------------------------------------------------
+        echo -en "\033[38;5;${i}m[color ${i}]\033[39m";
+    done;
+    echo ""
+}
+

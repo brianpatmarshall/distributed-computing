@@ -1,0 +1,67 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : colorAllBG
+# Description     : 
+#
+# Revision History: 
+#
+#   21 May 2024 - 
+#      Initial Version.
+#==========================================================================
+#--------------------------------------------------------------------------
+# Function: timeRead
+#--------------------------------------------------------------------------
+function timeRead {
+	local red=$1
+	local green=$2
+	local blue=$3
+
+  if read -n 1 -t .25
+  then 
+		echo "$red $green $blue" >> favColors
+    read -p 'Press <ENTER> to continue' 
+  fi
+}
+#==========================================================================
+#                          MAIN
+#==========================================================================
+#--------------------------------------------------------------------------
+# Set default values
+#--------------------------------------------------------------------------
+redStart=0
+greenStart=0
+blueStart=0
+
+while getopts :r:g:b: option
+do
+  case $option in 
+    \?)echo "Usage: $0 -r <redValue> -g <greenValue> -b <blueValue"
+       echo "Illegal option $OPTARG. Bailing ..."
+			 ;;
+		:) echo $OPTARG is missing an argument. Bailing 
+		   exit 2
+			 ;;
+		r) redStart=$OPTARG
+		   ;;
+		g) greenStart=$OPTARG
+		   ;;
+		b) blueStart=$OPTARG
+		   ;;
+	esac
+done
+
+box "Proceeding with values $redStart, $greenStart, $blueStart"
+for r in $(range $redStart 255)
+do
+  for g in $(range $greenStart 255)
+  do
+    for b in $(range $blueStart 255)
+    do
+		  timeRead $r $g $b
+      echo -e "\e]11;rgb:$r/$g/$b\a"
+      box $r $g $b
+    done
+  done
+done
+

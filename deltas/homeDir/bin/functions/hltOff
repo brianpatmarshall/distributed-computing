@@ -1,0 +1,10 @@
+# @(#) hltOff turns highlighting off
+#============================================================
+# Function   : hltOff
+# Usage      : hltOff
+# Description: turns terminal attributes off (bold as well)
+#============================================================
+function hltOff
+{
+   tput rmso
+}

@@ -1,0 +1,24 @@
+# @(#) qw strings double quotes all passed in parameters
+#==========================================================================
+# Function   : qw (quote word)
+# Usage      : qw <strings>
+# Description: double quotes all passed in parameters
+#==========================================================================
+function qw
+{
+   local result
+
+   if [[ -n $1 ]]
+   then
+      for w in "$@"
+      do
+         result="$result \"$w\""
+      done
+   else
+      while read line
+      do
+         qw $line
+      done
+   fi
+   echo $result
+}

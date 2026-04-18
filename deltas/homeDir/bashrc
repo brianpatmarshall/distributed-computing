@@ -1,0 +1,69 @@
+#===========================================================================
+# The .bashrc gets invoked when an interactive shell is spawned.  Put your
+# aliases here since they are not passed on to child processes. But don't
+# put environmental variables here, since these are passed on to children
+#===========================================================================
+#---------------------------------------------------------------------------
+# Variations of cd
+#---------------------------------------------------------------------------
+alias cd=cds
+alias cdl='cd $(lfd)'
+alias cdln='cd $(lfdn)'
+
+#---------------------------------------------------------------------------
+# Variations of find
+#---------------------------------------------------------------------------
+alias fj='find . -name "*.java"'
+alias fjg='find . -name "*.java" | xargs grep'
+alias fjgf='find . -name "*.java" | xargs grep -l'
+
+alias grep='grep --color=auto'
+alias h='history'
+
+#---------------------------------------------------------------------------
+# Variations of ls
+#---------------------------------------------------------------------------
+alias la='ls -a'
+alias l1r='ls -1tr'
+alias ll='ls -ltr'
+alias lla='ls -latr'
+# alias ls='ls -F' #  --color=auto' # interferes with "docker ls"
+alias lsg='ls | grep -i'
+alias lsl='ls -l | grep ^l'
+
+alias llf='less $(lf)'
+alias ngp='netstat -anp | grep '
+alias ngpl='netstat -npl | grep '
+alias ngb='netstat -anp | grep -A 1 '
+alias r='fc -s'
+alias rf='rm -i $(lf)'
+
+#---------------------------------------------------------------------------
+# Variations of sourcing and vi'ing
+#---------------------------------------------------------------------------
+alias sb='. ~/.bashrc'
+alias sp='. ~/.bash_profile'
+alias va='vi ~/.hidden/.addresses'
+alias vb='vi ~/.bashrc'
+alias ve='vi ~/.exrc'
+alias vg='vi ~/.hidden/.goodBGColors'
+alias vi=vis
+alias viewj='view $(find . -name "*.java")'
+alias vj='vi $(find . -name "*.java")'
+alias vp='vi ~/.bash_profile'
+alias vv='vi ~/.vimrc'
+alias vx='vi $(find . -name "*.xml")'
+
+#---------------------------------------------------------------------------
+# Colors
+#---------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------
+# Source additional files
+#---------------------------------------------------------------------------
+if [[ -e ~/.myBashrc ]]
+then
+  box source ~/.myBashrc
+  source ~/.myBashrc
+fi
+

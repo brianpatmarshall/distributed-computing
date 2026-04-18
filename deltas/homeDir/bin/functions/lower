@@ -1,0 +1,13 @@
+#============================================================
+# Function   : lower 
+# Usage      : lower <string>
+# Description: lowercases string
+#============================================================
+function lower {
+  if (( $# > 0 ))
+  then
+    echo $* | tr '[A-Z]' '[a-z]'
+  else
+    tr '[A-Z]' '[a-z]'
+  fi
+}

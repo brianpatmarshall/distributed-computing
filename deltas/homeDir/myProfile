@@ -1,0 +1,16 @@
+#===========================================================================
+# Environmental Vars
+#===========================================================================
+set -o allexport
+
+JAVA7_HOME=/opt/java/7
+JAVA7_DCEVM_HOME=/opt/java/7_DCEVM
+JAVA8_HOME=/opt/java/8
+JAVA8_DCEVM_HOME=/opt/java/8_DCEVM
+JAVA11_HOME=/opt/java/11
+JAVA17_HOME=/opt/java/17
+JAVA21_HOME=/opt/java/21
+JAVA24_HOME=/opt/java/24
+JAVA_HOME=$JAVA21_HOME
+
+set +o allexport

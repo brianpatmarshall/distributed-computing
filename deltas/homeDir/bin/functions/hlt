@@ -1,0 +1,10 @@
+# @(#) hlt turns highlighting on
+#============================================================
+# Function   : hlt 
+# Usage      : hlt
+# Description: turns highlighting on
+#============================================================
+function hlt
+{
+   tput smso
+}

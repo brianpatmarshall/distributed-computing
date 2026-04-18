@@ -1,0 +1,12 @@
+#============================================================
+# Function:    ok
+# Usage   :    ok <message>
+# Description: Print ok message
+#============================================================
+function ok 
+{
+  GREEN='\033[0;32m'
+	NC='\033[0m' # No Color
+
+	echo -e "${GREEN}[OK]${NC} $*"
+}

@@ -1,0 +1,5 @@
+function colorChangeFG {
+  local fgColor=${1:-128}
+  echo colorPrompt $(colorCurrent | tr ' ' '\n' | head -n 3 | xargs echo) $fgColor
+  colorPrompt $(colorCurrent | tr ' ' '\n' | head -n 3 | xargs echo) $fgColor
+}

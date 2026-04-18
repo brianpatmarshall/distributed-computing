@@ -1,0 +1,38 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : colorRandomFG
+# Description     : 
+#
+# Revision History: 
+#
+#   02 Sep 2024 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+colorClear() {
+    echo "\[\]"
+}
+
+colorToken() {
+    color=$1
+    text=$2
+    echo "\[\e[38;5;${color}m\]${text}\[\]"
+}
+
+colorPrompt() {
+    historyColor=${1:-196}
+    hostColor=${2:-208}
+    dirColor=${3:-226}
+    cmdLineColor=${4:-$(echo $(( (hostColor + dirColor) % 256 )))}
+    hist="$(colorToken $historyColor \\!)"
+    host="$(colorToken $hostColor \\h)"
+    dir="$(colorToken $dirColor '<\w> ')"
+    cmdLine="$(colorToken $cmdLineColor '')"
+    export PS1="${hist} ${host} ${dir} $cmdLine"
+}
+
+fg=$(shuf -n1 ~/.hidden/.favoriteFGs)
+
+echo colorPrompt $fg
+colorPrompt $fg
+

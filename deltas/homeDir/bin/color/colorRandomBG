@@ -1,0 +1,16 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : colorRandomBG
+# Description     : 
+#
+# Revision History: 
+#
+#   02 Sep 2024 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+bg=$(shuf -n1 ~/.hidden/.favoriteBGs)
+
+echo colorBG $bg
+colorBG $bg
+

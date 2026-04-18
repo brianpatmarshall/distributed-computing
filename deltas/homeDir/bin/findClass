@@ -1,0 +1,124 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : findClass
+# Description     : 
+#
+# Revision History: 
+#
+#   04 Aug 2013 - U-CENTRIPITAL\bmarshall
+#      Initial Version.
+#==========================================================================
+class=${1:?"Usage: $0 <class>"}
+dir=${2:-.}
+
+#==========================================================================
+# Function: absolutePath 
+#==========================================================================
+function absolutePath
+{
+  local file=$1
+  #-----------------------------------------------------------------------
+  # Strip the leading './' from file
+  #-----------------------------------------------------------------------
+  file=$(echo $file | sed 's/\.\///')
+
+  if [[ $file != /* ]]
+  then
+   echo "$(pwd)/$file"
+  else
+   echo $file 
+  fi
+}
+
+#==========================================================================
+# Function: printFoundClasses 
+#==========================================================================
+function printFoundClasses
+{
+  local class=$1
+  local findFile=$2
+
+  if [[ -e $findFile ]]
+  then
+    box "$class is found in ..."
+    for token in $(awk '{print $NF}' $findFile | sort -u)
+    do
+      if [[ $token == *.class ]]
+      then
+        echo " o $token"
+      elif [[ $token == *.jar ]]
+      then
+        echo " o $token"
+        jar tvf $token | grep "[ /]${class}.class" | awk '{print $NF}' | sed 's/\//./g' | while read line
+                                                                                                         do
+                                                                                                           echo "   - $line"
+                                                                                                         done
+      fi
+    done
+  fi
+}
+
+#==========================================================================
+# Function: searchInJar 
+#==========================================================================
+function searchInJar
+{
+  local class=$1
+  local jar=$2
+
+  : $(( jarsExamined += 1 ))
+
+  if jar tvf $jar | grep "[ /]${class}.class" >/dev/null 2>&1
+  then
+    echo "  ---> $(hlt)Found $class in $(absolutePath $jar)$(hltOff)"
+    echo "  ---> Found $class in $(absolutePath $jar)" >> $findFile
+  else
+    echo -n 'j' 1>&2
+  fi
+}
+
+#==========================================================================
+#                                     MAIN
+#==========================================================================
+jarsExamined=0
+#----------------------------------------------------------------------
+# Cache the results of this search
+#----------------------------------------------------------------------
+[[ -d ~/classCatalog ]] || mkdir ~/classCatalog
+findFile=~/classCatalog/find.$class
+#----------------------------------------------------------------------
+# Has the class already been found? If so, display the results and
+# possibly break off the search
+#----------------------------------------------------------------------
+if [[ -e $findFile ]]
+then
+  printFoundClasses $class $findFile
+  
+  read -n1 -p "Continue searching for $class? This can take a while: "
+  if [[ $REPLY != [yY] ]]
+  then
+    exit 0
+  fi
+fi
+
+for classOrJar in $(find $dir -name "*.jar" -o -name "*.class")
+do
+  if [[ $classOrJar == *.jar ]]
+  then
+    searchInJar $class $classOrJar
+  elif [[ $classOrJar == "/${class}.class" ]]
+  then
+    echo "$(hlt)$classOrJar$(hltOff)"
+    echo "  ---> $(hlt)Found $class in $classOrJar$(hltOff)"
+    echo "  ---> Found $class in $classOrJar" >> $findFile
+  fi
+done
+
+if [[ -e $findFile ]]
+then
+  sort -u -o $findFile $findFile
+  printFoundClasses $class $findFile
+fi
+
+echo "$(hlt)Examined $jarsExamined jar files$(hltOff)"

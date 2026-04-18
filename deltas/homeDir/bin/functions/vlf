@@ -1,0 +1,10 @@
+# @(#) vlf num  vis the num newest files in the current directory
+#============================================================
+# Function:    vlf
+# Usage   :    vlf <num> 
+# Description: vis the newest num files
+#============================================================
+function vlf
+{
+   vi $(\ls -ltr | grep -v ^d | tail -${1:-1} | awk '{print $NF}')
+}

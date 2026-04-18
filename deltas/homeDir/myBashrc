@@ -1,0 +1,71 @@
+#===========================================================================
+# Put your specific aliases here. 
+#===========================================================================
+#---------------------------------------------------------------------------
+# Sourcing and vi'ing files
+#---------------------------------------------------------------------------
+alias fans='sensors | grep fan'
+alias smb='. ~/.myBashrc'
+alias smp='. ~/.myProfile'
+alias va='vi ~/.hidden/.addresses'
+alias vmb='vi ~/.myBashrc'
+alias vmp='vi ~/.myProfile'
+alias vt='vi ~/.hidden/todo'
+alias todo='cat ~/.hidden/todo'
+alias vnc='vi $NEO4J_HOME/conf/neo4j.conf'
+alias vct='vi ~/.hidden/companyTodo'
+alias cfc='cat ~/.hidden/.favorite{BG,FG,Combo}s'
+alias vfc='vi -o ~/.hidden/.favorite{FG,BG,Combo}s'
+alias vfbc='vi ~/.hidden/.favoriteBGs'
+alias vffc='vi ~/.hidden/.favoriteFGs'
+alias vfcs='vi ~/.hidden/.favoriteCombos'
+alias vfv='vi ~/.hidden/.vivaldiFavorites'
+alias vfr='vi ~/.hidden/.recipes'
+alias vu='vi ~/.hidden/udemyClasses'
+
+alias sg='vi /home/bmarshall/docs/tutorials/Grier/onlineCourses'
+alias cdt='cd /tera/norton/23_TRO_Documents'
+#alias teraSum='echo "14 $(cat /tera/norton/23_TRO_Documents/completedDocuments.csv | awk -F, \'{print $(NF-1)}\')" | add'
+#---------------------------------------------------------------------------
+# Docker aliases
+#---------------------------------------------------------------------------
+alias dc='docker container '
+alias di='docker image'
+alias dn='docker network'
+alias ds='docker service'
+alias dv='docker volume'
+alias dy='docker system'
+alias dco='docker compose '
+#---------------------------------------------------------------------------
+# Git aliases
+#---------------------------------------------------------------------------
+alias gdno='git diff --name-only'
+alias eclipse='/opt/eclipse/current/eclipse'
+alias javaEclipse='/opt/eclipse/currentJava/eclipse&'
+alias joplin=/home/bmarshall/.joplin/Joplin.AppImage
+alias lnxt='for color in $(<~/.hidden/.goodBGColors); do nxt -f "$color"; done'
+alias postman='/opt/postman/current/Postman&'
+alias rstudio='/opt/rstudio/current/rstudio&'
+alias snxt="ls -1tr /tmp/lastXterm.* | tail -1 | xargs sed 's/.*-bg \([^ ]*\).*/\1/' | cat ~/.hidden/.goodBGColors - | removeDups | tr ' ' '\n' > tmp.$$; mv tmp.$$ ~/.hidden/.goodBGColors; cat ~/.hidden/.goodBGColors; rm \$(ls -1tr /tmp/lastXterm.* | tail -1) 2>/dev/null"
+alias cct='echo "================================="; cat ~/.hidden/companyTodo; echo "================================="'
+alias cdn='cd $NEO4J_HOME'
+alias cdndb='cd $NEO4J_HOME/data/databases'
+alias sjh='source ~/bin/setJavaHome'
+alias jv='java -version'
+alias src='source ~/bin/color/colorRandom'
+alias srccc='source ~/bin/color/colorRandomCombo'
+alias srccmd='colorCMD'
+alias srcfg='source ~/bin/color/colorChooseFG'
+alias srcbg='source ~/bin/color/colorChooseBG'
+alias studio3T='/opt/studio3t/Studio-3T'
+alias tailnfj='[[ -e $NEO4J_HOME/logs/neo4j.log ]] || touch $NEO4J_HOME/logs/neo4j.log; tail -f $NEO4J_HOME/logs/neo4j.log'
+alias vte='emacs ~/.hidden/todo.org &'
+
+alias gw='./gradlew'
+# alias sshTNS='ssh brian@teranexsyscos.com'
+alias vncHTC='gvncviewer 172.16.17.11:1'   # HTC@2021
+alias gbip='echo 10.0.0.146'
+alias sshGB='ssh -X brian@10.0.0.146'
+alias sshBS='ssh -i ~/bin/bytestream/bs_ec2_dev_server.pem ec2-user@ec2-18-224-207-1.us-east-2.compute.amazonaws.com'
+
+srccc # source a random color combo 

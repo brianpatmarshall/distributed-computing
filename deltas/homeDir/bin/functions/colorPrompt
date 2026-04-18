@@ -1,0 +1,76 @@
+# Clear color formatting
+colorClear() {
+    echo "\[\e[0m\]"
+}
+
+# Create a colored token with proper escaping for PS1
+colorToken() {
+    local color=$1
+    local text=$2
+    echo "\[\e[38;5;${color}m\]${text}\[\e[0m\]"
+}
+
+# Create a colored token with proper escaping for PS1
+colorTokenNoEnd() {
+    local color=$1
+    local text=$2
+    echo "\[\e[38;5;${color}m\]${text}"
+}
+
+# Set PS1 with colored prompt
+colorPrompt() {
+    local historyColor=${1:-196}      # Red
+    local hostColor=${2:-208}         # Orange  
+    local dirColor=${3:-226}          # Yellow
+    local cmdLineColor=${4:-$((( hostColor + dirColor ) % 256))}
+    
+    local hist="$(colorToken $historyColor '\!')"
+    local host="$(colorToken $hostColor '\h')"
+    local dir="$(colorToken $dirColor '<\w>')" 
+    local cmdLine="$(colorTokenNoEnd $cmdLineColor '')"
+    
+    export PS1="${hist} ${host} ${dir} ${cmdLine} "
+}
+
+# Return prompt string without setting PS1
+getColorPrompt() {
+    local historyColor=${1:-196}
+    local hostColor=${2:-208}  
+    local dirColor=${3:-226}
+    local cmdLineColor=${4:-$((( hostColor + dirColor ) % 256))}
+    
+    local hist="$(colorToken $historyColor '\!')"
+    local host="$(colorToken $hostColor '\h')" 
+    local dir="$(colorToken $dirColor '<\w>')"
+    local cmdLine="$(colorToken $cmdLineColor '$')"
+    
+    echo "${hist} ${host} ${dir} ${cmdLine} "
+}
+
+# Preset color schemes
+colorPromptDefault() {
+    colorPrompt 196 208 226  # red, orange, yellow
+}
+
+colorPromptBlue() {
+    colorPrompt 39 75 111    # blue theme
+}
+
+colorPromptGreen() {
+    colorPrompt 46 82 118    # green theme  
+}
+
+# Show available colors (useful for testing)
+colorsShow() {
+    echo "Available 256 colors:"
+    for i in {0..255}; do
+        printf "\e[38;5;${i}m%3d\e[0m " $i
+        [[ $((($i + 1) % 16)) == 0 ]] && echo
+    done
+    echo
+}
+
+# Example usage:
+# colorPrompt 196 208 226        # Custom colors
+# colorPromptDefault             # Use preset
+# PS1=$(getColorPrompt 39 75)    # Get string without setting

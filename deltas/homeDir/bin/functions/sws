@@ -1,0 +1,21 @@
+# @(#) sws removes duplicate white space from STDIN
+#============================================================
+# Function:  sws (squeeze white space)
+# Usage  :  sws 
+# Description: reads a stream from STDIN and returns that stream
+#       with duplicate white space removed
+#============================================================
+function sws 
+{
+  if [[ $# > 0 ]]
+	then
+	  echo $* | sws
+	else
+    while read line 
+    do
+      echo $line
+    done 
+  fi
+}
+
+ 

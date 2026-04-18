@@ -1,0 +1,37 @@
+# @(#) initCap string capitalizes the first character of string
+#============================================================
+# Function   : initLower 
+# Usage      : initLower <string>
+# Description: Lower-cases the first character of string
+#============================================================
+function initLower
+{
+   if (( $# >= 0 ))
+   then
+      for arg in $*
+      do
+         echo -n "$(lower ${arg:0:1})${arg:1} "
+      done
+   else
+      while read token
+      do
+         initLower $token
+      done
+   fi
+   # echo $(expr "$1" : '\(.\)' | tr [A-Z] [a-z])$(expr "$1" : '.\(.*\)')
+}
+
+#============================================================
+# Function   : lower 
+# Usage      : lower <string>
+# Description: lowercases string
+#============================================================
+function lower
+{
+   if (( $# > 0 ))
+   then
+      echo $* | tr '[A-Z]' '[a-z]'
+   else
+      tr '[A-Z]' '[a-z]'
+   fi
+}

@@ -1,0 +1,113 @@
+#! /bin/bash
+# @(#) Usage:  setupSSH hostList
+#==========================================================================
+# File            : setupSSH
+# Description     : This script takes a list of hostnames as parameters.  
+#                   It: 
+#                      o creates the directory ~/.ssh if it doesn't exist
+#                      o creates the directory ~/.ssh on each remote host if
+#                        it doesn't exist
+#                      o creates public keys for rsa, rsa1 and dsa and writes
+#                        them all to a file
+#                      o pushes that file to each remote host  
+#
+# Revision History: 
+#
+#   03 Mar 2003 - brian.marshall@oracle.com (Please submit bugs/fixes)
+#      Initial Version.
+#==========================================================================
+#==========================================================================
+# Function   : box 
+# Description: Wrap the passed in text in a box for easy sighting. 
+#==========================================================================
+function box
+{
+   if (( $# > 0 ))
+   then
+      echo "#==============================================================================="
+      echo "# $*"
+      echo "#==============================================================================="
+   else
+      echo "#==============================================================================="
+      while read line
+      do
+         echo "# $line"
+      done
+      echo "#==============================================================================="
+   fi
+}
+
+#--------------------------------------------------------------------------
+# If no command line arguments were specified, prompt the user for a list
+# of hosts
+#--------------------------------------------------------------------------
+if (( $# == 0 ))
+then
+   read -p "Enter a space separated list of hosts to which you use ssh: " hosts
+else
+   hosts=$*
+fi
+
+#--------------------------------------------------------------------------
+# Bail if there is no list of hosts
+#--------------------------------------------------------------------------
+if [[ -z $hosts ]]
+then
+   box "No hosts to specified.  Exiting ..."
+   exit 1
+fi
+
+#--------------------------------------------------------------------------
+# Create the .ssh directory in $HOME, if it doesn't already exist.  If the
+# directory does exist, remove all public keys
+#--------------------------------------------------------------------------
+[[ ! -d ~/.ssh ]] && mkdir .ssh
+cd ~/.ssh
+
+#--------------------------------------------------------------------------
+# Generate the public keys if they are not already present
+#--------------------------------------------------------------------------
+for type in dsa rsa rsa1
+do
+   if [[ $type == [dr]sa ]]
+   then
+      file=id_$type
+   else
+      file=identity
+   fi   
+   if [[ ! -e ${file}.pub ]]
+   then
+      box "Generating public key for $file"
+      box sh-keygen -t $type -P '' -f $file 
+      ssh-keygen -t $type -f $file -P ''
+   else
+      box "Using ${file}.pub in ~/.ssh"
+   fi
+done
+#--------------------------------------------------------------------------
+# Create the .ssh directory on the remote machine.  Then append the public
+# keys on your box to the ~/.ssh/authorized_keys file
+#--------------------------------------------------------------------------
+for host in $hosts
+do
+   box "$(tput bold)creating .ssh directory on $host$(tput rmso)"
+   user=${userName:-$(id -un)}
+   read -p "Enter your user name on $host [$user]: " userName
+   : ${userName:=$user}
+
+   #-----------------------------------------------------------------------
+   # Use ssh to 
+   #   1. Create the directory .ssh on the remote machine in $userNames
+   #      home directory.  The if-statement will fail if the user's shell
+   #      is not Korn or Bash, in which case it will always try to create
+   #      the directory
+   #   2. Concatentate the public keys to the authorized_keys file in the
+   #      .ssh directory.  
+   #-----------------------------------------------------------------------
+   cat *.pub | ssh $userName@$host '[ -d .ssh ] || mkdir -m700 .ssh
+                                    cd .ssh 
+                                    cat >> authorized_keys 
+																		chmod 600 authorized_keys
+                                    echo created .ssh on $host
+                                    ls -ltr'
+done
