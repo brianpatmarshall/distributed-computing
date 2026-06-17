@@ -1,0 +1,87 @@
+#! /bin/bash
+# @(#)
+#==========================================================================
+# File            : colorTRandomCombo
+# Description     : Random palette with intentional BG/FG harmony
+#
+# Strategy (see Understanding-Colors.md):
+#   1. Pick a primary hue from the 6-hue wheel (R, Y, G, C, B, M).
+#   2. Build a brightness ladder in that hue for history -> host -> dir.
+#   3. Cmdline accent uses the complementary hue (180 deg on the wheel).
+#   4. BG is tinted toward the SAME complementary hue, but very dim.
+#
+# Result: every random roll has a defined harmonic structure --
+#   BG and cmdline share a hue family (monochromatic relationship),
+#   and the main prompt colors contrast against BG by hue, not just
+#   brightness (complementary relationship).
+#
+# Revision History:
+#   08 Sep 2024 - Brian Marshall - initial (purely random)
+#   05 May 2026 - Hue-laddered prompt
+#   05 May 2026 - 6-hue wheel + complementary BG/cmdline harmony
+#==========================================================================
+
+# 256-color cube index from (R,G,B), each 0..5.  N = 16 + 36R + 6G + B
+cube() { echo $((16 + 36*$1 + 6*$2 + $3)); }
+
+# Set globals rw,gw,bw to the channel mask for hue $1.
+# Hue numbering on the 6-hue wheel:
+#   0=R  1=Y(R+G)  2=G  3=C(G+B)  4=B  5=M(R+B)
+hueChannels() {
+    rw=0; gw=0; bw=0
+    case $1 in
+        0) rw=1            ;;  # R
+        1) rw=1; gw=1      ;;  # Y
+        2)        gw=1     ;;  # G
+        3)        gw=1; bw=1 ;; # C
+        4)               bw=1 ;; # B
+        5) rw=1;         bw=1 ;; # M
+    esac
+}
+
+# huedColor HUE_INDEX BRIGHTNESS_LEVEL
+#   Channels that belong to the hue get $level; the others get a random
+#   secondary value below $level.  Secondary range widens at higher levels
+#   so bright colors get a luminance lift (avoids the dim-pure-blue trap),
+#   but stays at 0 for level=1/2 to preserve hue purity at low brightness.
+huedColor() {
+    hueChannels $1
+    local pri=$2
+    local secmin=$((pri - 3));  [ $secmin -lt 0 ] && secmin=0
+    local secmax=$((pri - 1));  [ $secmax -lt 0 ] && secmax=0
+    local range=$((secmax - secmin + 1))
+    local sec=$((RANDOM % range + secmin))
+    local r=$((rw == 1 ? pri : sec))
+    local g=$((gw == 1 ? pri : sec))
+    local b=$((bw == 1 ? pri : sec))
+    cube $r $g $b
+}
+
+# Pick a primary hue and its complement (opposite side of the wheel).
+hue=$((RANDOM % 6))
+comp=$(( (hue + 3) % 6 ))
+
+# Prompt: 3-step brightness ladder in primary hue, plus cmdline accent
+# in the complement.  Levels chosen to match the *ish family conventions:
+#   history dim, host medium, dir brightest, cmd a bright accent.
+hist=$(huedColor $hue  2)
+host=$(huedColor $hue  3)
+dir=$(huedColor  $hue  5)
+cmd=$(huedColor  $comp 4)
+prompt="$hist $host $dir $cmd"
+
+# BG: very dim, tilted toward the complementary hue.
+# By sharing a hue family with the cmdline accent, BG ties the palette
+# together (cmdline reads as "the bright version of the BG").
+# Active channels max out at 12/255; suppressed channels at 3/255 -- well
+# below any cube prompt color (level 2 ~= 135/255), so contrast holds.
+hueChannels $comp
+strong=$((RANDOM % 5 + 8))    # 8-12 in the complement's active channels
+weak=$((RANDOM % 4))          # 0-3  in the suppressed channels
+bgR=$((rw == 1 ? strong : weak))
+bgG=$((gw == 1 ? strong : weak))
+bgB=$((bw == 1 ? strong : weak))
+bg="$bgR $bgG $bgB"
+
+box  eval "colorBGDec $bg; colorPrompt $prompt"
+     eval "colorBGDec $bg; colorPrompt $prompt"

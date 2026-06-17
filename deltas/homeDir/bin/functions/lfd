@@ -1,0 +1,10 @@
+# @(#) lf num lists the n newest files
+#============================================================
+# Function   : lfd
+# Usage      : lfd [num]
+# Description: lists the newest num directories 
+#============================================================
+function lfd
+{
+   \ls $LS_OPTIONS -ltr | grep ^d | awk '{print $NF}' | tail -${1:-1}
+}

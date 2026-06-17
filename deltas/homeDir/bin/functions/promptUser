@@ -1,0 +1,6 @@
+function promptUser {
+  local prompt="$@"
+	box read -p ${prompt}
+	read -p "${prompt}: "
+	echo $REPLY
+}

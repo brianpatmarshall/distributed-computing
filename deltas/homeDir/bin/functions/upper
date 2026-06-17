@@ -1,0 +1,15 @@
+# @(#) upper string  uppercases the passed in string
+#============================================================
+# Function:    upper 
+# Usage   :    upper <string> 
+# Description: Prints string uppercased
+#============================================================
+function upper
+{
+   if (( $# > 0 ))
+   then
+      echo $* | tr '[a-z]' '[A-Z]'
+   else
+      tr '[a-z]' '[A-Z]'
+   fi
+}

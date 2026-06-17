@@ -1,0 +1,10 @@
+# @(#) boldOff turns bold fonts off
+#============================================================
+# Function:    boldOff
+# Usage   :    bold 
+# Description: Turns bold fonts off (and highlighting too)
+#============================================================
+function boldOff
+{
+   tput sgr0 
+}

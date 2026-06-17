@@ -1,0 +1,269 @@
+warning: in the working copy of 'const-catalog-backend/Dockerfile', CRLF will be replaced by LF the next time Git touches it
+diff --git a/const-catalog-backend/Dockerfile b/const-catalog-backend/Dockerfile
+index 11e9816..fe27b4e 100644
+--- a/const-catalog-backend/Dockerfile
++++ b/const-catalog-backend/Dockerfile
+@@ -33,8 +33,7 @@ FROM eclipse-temurin:21-jre
+ WORKDIR /app
+ 
+ # Install git (required for "Create New Branch" transform feature)
+-# Install gosu (required for entrypoint to drop from root to appuser)
+-RUN apt-get update && apt-get install -y --no-install-recommends git gosu \
++RUN apt-get update && apt-get install -y --no-install-recommends git \
+     && rm -rf /var/lib/apt/lists/*
+ 
+ # Copy the built JAR from the builder stage
+@@ -63,5 +62,5 @@ EXPOSE 8080
+ HEALTHCHECK --interval=30s --timeout=3s \
+     CMD curl -f http://localhost:8080/api/stats/health || exit 1
+ 
+-# Start as root — entrypoint.sh fixes permissions then drops to appuser via gosu
++# Start as root — entrypoint.sh fixes permissions then drops to appuser via su
+ ENTRYPOINT ["/app/entrypoint.sh"]
+diff --git a/const-catalog-backend/pom.xml b/const-catalog-backend/pom.xml
+index 6e5e33f..b6e0b61 100644
+--- a/const-catalog-backend/pom.xml
++++ b/const-catalog-backend/pom.xml
+@@ -59,6 +59,12 @@
+             <artifactId>lettuce-core</artifactId>
+         </dependency>
+ 
++        <!-- MongoDB driver for optional MongoDB config store backend -->
++        <dependency>
++            <groupId>org.mongodb</groupId>
++            <artifactId>mongodb-driver-sync</artifactId>
++        </dependency>
++
+         <!-- Spring Data Redis (for RedisTemplate convenience) -->
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+@@ -87,6 +93,11 @@
+             <artifactId>neo4j</artifactId>
+             <scope>test</scope>
+         </dependency>
++        <dependency>
++            <groupId>org.testcontainers</groupId>
++            <artifactId>mongodb</artifactId>
++            <scope>test</scope>
++        </dependency>
+         <dependency>
+             <groupId>org.testcontainers</groupId>
+             <artifactId>junit-jupiter</artifactId>
+diff --git a/const-catalog-backend/src/main/java/com/boeing/constcatalog/backend/service/SiteConfigurationService.java b/const-catalog-backend/src/main/java/com/boeing/constcatalog/backend/service/SiteConfigurationService.java
+index 122e7cf..220f10b 100644
+--- a/const-catalog-backend/src/main/java/com/boeing/constcatalog/backend/service/SiteConfigurationService.java
++++ b/const-catalog-backend/src/main/java/com/boeing/constcatalog/backend/service/SiteConfigurationService.java
+@@ -1,15 +1,10 @@
+ package com.boeing.constcatalog.backend.service;
+ 
+-import com.boeing.constcatalog.backend.config.ValKeyConfig;
++import com.boeing.constcatalog.backend.store.ConfigStore;
+ import com.github.benmanes.caffeine.cache.Cache;
+ import com.github.benmanes.caffeine.cache.Caffeine;
+-import io.lettuce.core.api.StatefulRedisConnection;
+-import io.lettuce.core.api.sync.RedisCommands;
+-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
+-import io.lettuce.core.pubsub.api.sync.RedisPubSubCommands;
+ import jakarta.annotation.PostConstruct;
+ import lombok.extern.slf4j.Slf4j;
+-import org.springframework.beans.factory.annotation.Qualifier;
+ import org.springframework.stereotype.Service;
+ 
+ import java.util.List;
+@@ -18,7 +13,6 @@ import java.util.Objects;
+ import java.util.Optional;
+ import java.util.function.Function;
+ import java.util.function.Supplier;
+-import java.util.stream.Collectors;
+ 
+ /**
+  * SiteConfigurationService provides centralized configuration management with
+@@ -78,21 +72,17 @@ import java.util.stream.Collectors;
+ @Slf4j
+ public class SiteConfigurationService {
+ 
+-    private final StatefulRedisConnection<String, String> redisConnection;
+-    private final StatefulRedisPubSubConnection<String, String> pubSubConnection;
++    private final ConfigStore configStore;
+     private final Caffeine<Object, Object> caffeineBuilder;
+ 
+     public SiteConfigurationService(
+-            @Qualifier("redisConnection") StatefulRedisConnection<String, String> redisConnection,
+-            StatefulRedisPubSubConnection<String, String> pubSubConnection,
++            ConfigStore configStore,
+             Caffeine<Object, Object> caffeineBuilder) {
+-        this.redisConnection = redisConnection;
+-        this.pubSubConnection = pubSubConnection;
++        this.configStore = configStore;
+         this.caffeineBuilder = caffeineBuilder;
+     }
+ 
+     private Cache<String, String> localCache;
+-    private RedisCommands<String, String> syncCommands;
+ 
+     /**
+      * Sentinel value for caching null/missing values to prevent repeated lookups.
+@@ -102,8 +92,7 @@ public class SiteConfigurationService {
+     @PostConstruct
+     void initialize() {
+         this.localCache = caffeineBuilder.build();
+-        this.syncCommands = redisConnection.sync();
+-        log.info("SiteConfigurationService initialized with Caffeine cache and ValKey backend");
++        log.info("SiteConfigurationService initialized with Caffeine cache and {} backend", configStore.storeName());
+     }
+ 
+     /* ========================================================================
+@@ -123,7 +112,7 @@ public class SiteConfigurationService {
+     public String lookup(String key) {
+         Objects.requireNonNull(key, "Configuration key cannot be null");
+ 
+-        return Optional.ofNullable(localCache.get(key, this::fetchFromValKey))
++        return Optional.ofNullable(localCache.get(key, this::fetchFromStore))
+             .filter(v -> !NULL_SENTINEL.equals(v))
+             .orElse(null);
+     }
+@@ -240,15 +229,7 @@ public class SiteConfigurationService {
+      * @return map of matching keys to their values
+      */
+     public Map<String, String> lookupByPrefix(String prefix) {
+-        String pattern = ValKeyConfig.CONFIG_KEY_PREFIX + prefix + "*";
+-        List<String> keys = syncCommands.keys(pattern);
+-
+-        return keys.stream()
+-            .collect(Collectors.toMap(
+-                k -> k.substring(ValKeyConfig.CONFIG_KEY_PREFIX.length()),
+-                k -> Optional.ofNullable(syncCommands.get(k)).orElse(""),
+-                (v1, v2) -> v1
+-            ));
++        return configStore.getByPrefix(prefix);
+     }
+ 
+     // ========================================================================
+@@ -264,11 +245,8 @@ public class SiteConfigurationService {
+     public void store(String key, String value) {
+         Objects.requireNonNull(key, "Configuration key cannot be null");
+ 
+-        String fullKey = ValKeyConfig.CONFIG_KEY_PREFIX + key;
+-        syncCommands.set(fullKey, value);
+-
+-        // Publish change notification for distributed invalidation
+-        publishChange(key);
++        configStore.set(key, value);
++        configStore.publishChange(key);
+ 
+         // Immediately update local cache
+         localCache.put(key, value != null ? value : NULL_SENTINEL);
+@@ -282,17 +260,11 @@ public class SiteConfigurationService {
+      * @param entries map of key-value pairs to store
+      */
+     public void storeBatch(Map<String, String> entries) {
+-        Map<String, String> fullKeyEntries = entries.entrySet().stream()
+-            .collect(Collectors.toMap(
+-                e -> ValKeyConfig.CONFIG_KEY_PREFIX + e.getKey(),
+-                Map.Entry::getValue
+-            ));
+-
+-        syncCommands.mset(fullKeyEntries);
++        configStore.setBatch(entries);
+ 
+         // Publish changes and update local cache
+         entries.forEach((key, value) -> {
+-            publishChange(key);
++            configStore.publishChange(key);
+             localCache.put(key, value != null ? value : NULL_SENTINEL);
+         });
+ 
+@@ -306,16 +278,15 @@ public class SiteConfigurationService {
+      * @return true if the key existed and was deleted
+      */
+     public boolean delete(String key) {
+-        String fullKey = ValKeyConfig.CONFIG_KEY_PREFIX + key;
+-        long deleted = syncCommands.del(fullKey);
++        boolean deleted = configStore.delete(key);
+ 
+-        if (deleted > 0) {
+-            publishChange(key);
++        if (deleted) {
++            configStore.publishChange(key);
+             localCache.invalidate(key);
+             log.debug("Deleted configuration: {}", key);
+         }
+ 
+-        return deleted > 0;
++        return deleted;
+     }
+ 
+     // ========================================================================
+@@ -371,28 +342,18 @@ public class SiteConfigurationService {
+     // Internal Methods
+     // ========================================================================
+ 
+-    private String fetchFromValKey(String key) {
+-        String fullKey = ValKeyConfig.CONFIG_KEY_PREFIX + key;
+-        String value = syncCommands.get(fullKey);
++    private String fetchFromStore(String key) {
++        String value = configStore.get(key);
+ 
+         if (value == null) {
+-            log.trace("Cache miss for key '{}', not found in ValKey", key);
++            log.trace("Cache miss for key '{}', not found in {}", key, configStore.storeName());
+             return NULL_SENTINEL;
+         }
+ 
+-        log.trace("Cache miss for key '{}', fetched from ValKey", key);
++        log.trace("Cache miss for key '{}', fetched from {}", key, configStore.storeName());
+         return value;
+     }
+ 
+-    private void publishChange(String key) {
+-        try {
+-            RedisPubSubCommands<String, String> pubSub = pubSubConnection.sync();
+-            pubSub.publish(ValKeyConfig.CONFIG_CHANGE_CHANNEL, key);
+-        } catch (Exception e) {
+-            log.warn("Failed to publish configuration change for key '{}': {}", key, e.getMessage());
+-        }
+-    }
+-
+     private Integer parseIntSafely(String value) {
+         try {
+             return Integer.parseInt(value.trim());
+diff --git a/docker-compose.yml b/docker-compose.yml
+index c885569..19b53d1 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -74,6 +74,30 @@ services:
+     stdin_open: true
+     tty: true
+ 
++  # MongoDB (Optional Config Store Backend)
++  # ----------------------------------------
++  # Alternative to ValKey for storing configuration key-value pairs.
++  # Only starts when the mongodb profile is active:
++  #   docker compose --profile mongodb up -d
++  # Then set config.store.type=mongodb in application.yml or env var.
++  mongo:
++    image: mongo:7
++    container_name: const-catalog-mongo
++    profiles:
++      - mongodb
++    ports:
++      - "27017:27017"
++    volumes:
++      - mongo_data:/data/db
++    healthcheck:
++      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
++      interval: 10s
++      timeout: 5s
++      retries: 5
++      start_period: 10s
++    networks:
++      - const-catalog-network
++
+   # Neo4J Graph Database
+   # --------------------
+   # The persistent store for our configuration graph. We use the community
+@@ -162,3 +186,4 @@ volumes:
+   neo4j_data:
+   neo4j_logs:
+   valkey_data:
++  mongo_data:

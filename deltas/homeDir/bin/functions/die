@@ -1,0 +1,13 @@
+#============================================================
+# Function:    die
+# Usage   :    die <dieMessage>
+# Description: Print Die Message and exit
+#============================================================
+function die 
+{
+  RED='\033[0;31m'
+	NC='\033[0m' # No Color
+
+  error "$*"
+	exit 1
+}

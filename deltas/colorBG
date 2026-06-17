@@ -1,0 +1,203 @@
+#!/bin/bash
+
+# Set terminal background color (your original function)
+colorBG() {
+    local r=${1:-FF}
+    local g=${2:-FF} 
+    local b=${3:-FF}
+    echo -e "\e]11;rgb:$r/$g/$b\a"
+}
+
+# Set terminal foreground/text color
+colorFG() {
+    local r=${1:-00}
+    local g=${2:-00}
+    local b=${3:-00}
+    echo -e "\e]10;rgb:$r/$g/$b\a"
+}
+
+# Enhanced version with validation
+colorBGSafe() {
+    local r=${1:-FF}
+    local g=${2:-FF}
+    local b=${3:-FF}
+    
+    # Validate hex values
+    if [[ ! "$r" =~ ^[0-9A-Fa-f]{2}$ ]] || 
+       [[ ! "$g" =~ ^[0-9A-Fa-f]{2}$ ]] || 
+       [[ ! "$b" =~ ^[0-9A-Fa-f]{2}$ ]]; then
+        echo "Error: RGB values must be 2-digit hex (00-FF)" >&2
+        return 1
+    fi
+    
+    printf "\e]11;rgb:%s/%s/%s\a" "$r" "$g" "$b"
+}
+
+# Convert a single decimal value (0-255) to 2-digit hex
+dec2hex() {
+    printf "%02X" "$1"
+}
+
+# Set background using decimal RGB (0-255)
+colorBGDec() {
+    local r=${1:-255}
+    local g=${2:-255}
+    local b=${3:-255}
+
+    colorBG "$(dec2hex "$r")" "$(dec2hex "$g")" "$(dec2hex "$b")"
+}
+
+# Preset background colors
+colorBGRed()     { colorBG "FF" "00" "00"; }
+colorBGGreen()   { colorBG "00" "FF" "00"; }
+colorBGBlue()    { colorBG "00" "00" "FF"; }
+colorBGBlack()   { colorBG "00" "00" "00"; }
+colorBGWhite()   { colorBG "FF" "FF" "FF"; }
+colorBGGray()    { colorBG "80" "80" "80"; }
+colorBGDark()    { colorBG "1A" "1A" "1A"; }  # Dark gray
+
+# Reset to terminal default colors
+colorReset() {
+    # Reset background to default
+    echo -e "\e]111\a"
+    # Reset foreground to default  
+    echo -e "\e]110\a"
+}
+
+# Save current colors (if terminal supports it)
+colorSave() {
+    echo -e "\e]11;?\a"  # Query current background
+    echo -e "\e]10;?\a"  # Query current foreground
+}
+
+# Popular color schemes
+colorSchemeDark() {
+    colorBG "1A" "1A" "1A"  # Dark background
+    colorFG "E0" "E0" "E0"  # Light text
+}
+
+colorSchemeMatrix() {
+    colorBG "00" "00" "00"  # Black background
+    colorFG "00" "FF" "00"  # Green text
+}
+
+colorSchemeTerminal() {
+    colorBG "00" "00" "00"  # Black background
+    colorFG "C0" "C0" "C0"  # Light gray text
+}
+
+colorGreenish() {
+    colorBG 0A 07 11
+    colorPrompt 28 41 154 49
+}
+
+colorBlueish() {
+    colorBG 07 0A 14
+    colorPrompt 18 33 117 45
+}
+
+colorRedish() {
+    colorBG 14 07 0A
+    colorPrompt 52 124 209 167
+}
+
+colorPurpleish() {
+    colorBG 0E 07 14
+    colorPrompt 53 91 177 135
+}
+
+# Secondary hues (R+G, G+B, R+B) — complete the 6-hue wheel.
+
+colorYellowish() {
+    colorBG 07 07 14              # dim violet (complement)
+    colorPrompt 100 143 228 214   # olive → mustard → cream → orange accent
+}
+
+colorCyanish() {
+    colorBG 14 07 07              # dim warm red (complement)
+    colorPrompt 30 73 123 39      # dark teal → mid teal → cyan → cyan-blue accent
+}
+
+colorMagentish() {
+    colorBG 07 14 07              # dim green (complement)
+    colorPrompt 90 133 213 41     # plum → magenta → pink → green accent
+}
+
+# Tertiary hues (between adjacent primaries on the wheel).
+
+colorOrangeish() {
+    colorBG 07 0E 14              # dim cool blue (complement)
+    colorPrompt 94 136 215 39     # dark amber → orange → peach → cyan accent
+}
+
+colorTealish() {
+    colorBG 14 0A 07              # dim warm coral (complement)
+    colorPrompt 31 74 153 209     # dark teal → mid teal → sky → peach accent
+}
+
+colorLimeish() {
+    colorBG 0E 05 0E              # dim magenta (complement)
+    colorPrompt 70 112 191 207    # dark lime → mid lime → bright lime → magenta accent
+}
+
+colorPinkish() {
+    colorBG 07 12 0A              # dim green (complement)
+    colorPrompt 89 168 218 47     # wine → rose → light pink → green accent
+}
+
+# Themed schemes — pick a mood, not a hue rotation.
+# Unlike the *ish family, these break the matched-brightness-ladder rule
+# in favor of evoking a specific feel.
+
+colorCircus() {
+    colorBG 0A 0A 0A           # neutral dark, so primaries pop
+    colorPrompt 196 226 39 201 # red, yellow, blue, magenta — primaries
+}
+
+colorSpace() {
+    colorBG 00 00 0A           # near-black with the faintest blue
+    colorPrompt 19 99 51 231   # deep blue → nebula purple → cyan → starlight
+}
+
+colorSunset() {
+    colorBG 1F 07 14           # dark plum twilight
+    colorPrompt 88 208 220 213 # dark red → orange → gold → pink
+}
+
+colorMorning() {
+    colorBG E8 F0 FF           # pale dawn sky — LIGHT background
+    colorPrompt 24 94 22 88    # dark teal, amber, dark green, dark red
+}
+
+colorMoon() {
+    colorBG 05 08 14           # midnight blue-black
+    colorPrompt 60 103 153 195 # silver ladder: dim → bright
+}
+
+# Example usage function
+showColorExamples() {
+    echo "Terminal Color Functions Demo:"
+    echo "Current colors:"
+    
+    echo "Setting red background..."
+    colorBGRed
+    sleep 1
+    
+    echo "Setting green background..." 
+    colorBGGreen
+    sleep 1
+    
+    echo "Setting dark theme..."
+    colorSchemeDark
+    sleep 2
+    
+    echo "Resetting to defaults..."
+    colorReset
+}
+
+# Usage examples:
+# colorBG FF 00 00           # Red background (hex)
+# colorBGDec 255 0 0         # Red background (decimal)  
+# colorBGRed                 # Preset red
+# colorSchemeDark            # Dark theme
+# colorReset                 # Reset to defaults

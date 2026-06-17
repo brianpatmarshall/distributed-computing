@@ -1,0 +1,10 @@
+# @(#) lf num lists the n newest files
+#============================================================
+# Function   : lf 
+# Usage      : lf [num]
+# Description: lists the newest num files
+#============================================================
+function lf
+{
+   /bin/ls $LS_OPTIONS -1tr | tail -${1:-1}
+}

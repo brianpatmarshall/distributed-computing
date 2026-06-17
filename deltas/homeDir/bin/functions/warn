@@ -1,0 +1,12 @@
+#============================================================
+# Function:    warn
+# Usage   :    warn <message>
+# Description: Print warning message
+#============================================================
+function warn 
+{
+  YELLOW='\033[1;33m'
+	NC='\033[0m' # No Color
+
+	echo -e "${YELLOW}[WARN]${NC}"  $*
+}

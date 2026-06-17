@@ -1,0 +1,10 @@
+# @(#) bold turns bold font on (use boldOff) to turn bold off
+#============================================================
+# Function:    bold
+# Usage   :    bold 
+# Description: Turns bold fonts on
+#============================================================
+function bold
+{
+   tput bold
+}

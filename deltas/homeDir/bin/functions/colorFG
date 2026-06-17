@@ -1,0 +1,6 @@
+colorFG()
+{
+  local color=${1:122}
+  echo -en "\033[38;5;${color}m"
+}
+

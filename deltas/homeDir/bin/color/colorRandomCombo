@@ -1,0 +1,18 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : colorRandomCombo
+# Description     : 
+#
+# Revision History: 
+#
+#   08 Sep 2024 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+combos=$(shuf -n1 ~/.hidden/.favoriteCombos)
+bg=$(shuf -n1 ~/.hidden/.favoriteBGs)
+fg=$(shuf -n1 ~/.hidden/.favoriteFGs)
+
+box eval "colorBG $bg; colorPrompt $fg"
+eval "colorBG $bg; colorPrompt $fg"
+# echo $combos

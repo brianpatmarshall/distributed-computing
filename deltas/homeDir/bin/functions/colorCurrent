@@ -1,0 +1,3 @@
+function colorCurrent {
+  echo $PS1 | tr ' ' '\n' | sed 's/^.*;//' | grep m | sed 's/m.*//' | xargs echo
+}

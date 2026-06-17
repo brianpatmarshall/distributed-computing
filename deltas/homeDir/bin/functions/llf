@@ -1,0 +1,10 @@
+# @(#) llf num gives a long listing of the n newest files
+#============================================================
+# Function   : llf (long list last files)
+# Usage      : llf [num]
+# Description: long listing of the newest num files
+#============================================================
+function llf
+{
+   ls -ltr | tail -${1:-1}
+}

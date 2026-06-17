@@ -1,0 +1,99 @@
+#===========================================================================
+# This is the bash login script.  It gets executed only on login and when
+# explicitly sourced by either:
+#    1.  . ~/.bash_login
+# or
+#    2. source ~/.bash_login
+# Define all environmental variables here.  Don't put aliases here since
+# they are not inherited by subshells
+#===========================================================================
+#---------------------------------------------------------------------------
+# source and export function definitions (-fx, below, exports)
+#---------------------------------------------------------------------------
+for f in  $(ls ~/bin/functions/*)
+do
+   . $f
+   echo typeset -fx ${f##*/}
+   typeset -fx ${f##*/}
+done
+
+#---------------------------------------------------------------------------
+# define environmental variables
+#---------------------------------------------------------------------------
+set -o allexport
+GREP_COLOR='mt=1;32' # 32 -> Green, 5 -> Blink
+CDPATH=.:~:~/src:~/docs:~/docs/tutorials:~/workspaces
+EDITOR=vi
+FCEDIT=vi
+BEFOREPATH=$PATH
+
+PATH=\
+~/bin:\
+/usr/local/bin:\
+/usr/bin:\
+/usr/sbin:\
+/sbin:\
+/bin:\
+.:\
+$PATH
+
+PS1="\[\e[38;5;196m\]\! \[$(tput sgr0)\]\[\e[38;5;208m\]\h \[$(tput sgr0)\] \[\e[38;5;220m\]<\w\[$(tput sgr0)\]\[\e[38;5;226m\]> \[$(tput sgr0)\]"
+TERM=xterm
+set +o allexport
+
+#---------------------------------------------------------------------------
+# Remove duplicate entries in the PATH variable 
+#---------------------------------------------------------------------------
+PATH=$(removeDups -d : "$PATH")
+
+#---------------------------------------------------------------------------
+# Set the HOSTNAME if it is not already set
+#---------------------------------------------------------------------------
+[[ -n $HOSTNAME ]] || export HOSTNAME=`uname -n`
+#---------------------------------------------------------------------------
+# source my Personal Profile
+#---------------------------------------------------------------------------
+if [[ -e ~/.myProfile ]]
+then
+  echo source ~/.myProfile
+  source ~/.myProfile
+fi
+#---------------------------------------------------------------------------
+# source the .bashrc.  Login shells do not source this file by default
+#---------------------------------------------------------------------------
+if [[ -e ~/.bashrc ]] ; then
+  source ~/.bashrc
+fi
+
+#---------------------------------------------------------------------------
+# Put file completion functions here
+#---------------------------------------------------------------------------
+complete -A hostname ssh sftp ping 
+
+
+#---------------------------------------------------------------------------
+# Check the PATH environmental variable.  When login scripts are transferred
+# between boxes, it is best to know if some directories don't exist
+#---------------------------------------------------------------------------
+if ! checkPath $PATH > /dev/null 2>&1
+then
+   echo "======================================================================"
+   echo "Some directories do NOT exist in the PATH variable"
+   checkPath $PATH > /dev/null
+   echo "Please edit ~/.bash_profile and modify PATH appropriately"
+   echo "======================================================================"
+fi
+
+#---------------------------------------------------------------------------
+# Check the CDPATH environmental variable.  When login scripts are transferred
+# between boxes, it is best to know if some directories don't exist
+#---------------------------------------------------------------------------
+if ! checkPath $CDPATH > /dev/null 2>&1
+then
+   echo "======================================================================"
+   echo "Some directories do NOT exist in the CDPATH variable"
+   checkPath $CDPATH > /dev/null
+   echo "Please edit ~/.bash_profile and modify CDPATH appropriately"
+   echo "======================================================================"
+fi
+

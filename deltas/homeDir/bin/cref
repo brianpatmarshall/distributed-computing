@@ -1,0 +1,58 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : cref
+# Description     : Create Function
+#
+# Revision History: 
+#
+#   18 Apr 2026 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+while getopts :d:u: arg
+do
+  case $arg in 
+   \?) echo "Bad option $OPTARG"
+       echo "Usage: $0 -d <description> -u <usage>"
+       exit 1;;
+    :) echo "Option $OPTARG is missing an argument"
+       exit 2;;
+    d) description=$OPTARG;;
+    u) usage=$OPTARG;;
+  esac
+done
+
+#--------------------------------------------------------------------------
+# Skip past the flags and arguments
+#--------------------------------------------------------------------------
+shift $(( OPTIND - 1 ))
+functionName=${1:-$(read -p "Enter function name: "; echo $REPLY)}
+while :
+do
+  if [[ -e $functionName ]]
+  then
+    read -p "$functionName exists. Overwrite? " overwrite
+    if [[ $overwrite =~ ^[yY] ]]
+    then
+      break
+    else
+      echo "$functionName exits"
+      functionName=$(read -p "Enter function name: "; echo $REPLY)
+    fi
+  else
+    break
+  fi
+done
+    
+cat << EOF > $functionName
+#============================================================
+# Function:    $functionName
+# Usage   :    $usage
+# Description: $description
+#============================================================
+function $functionName 
+{
+
+}
+EOF
+

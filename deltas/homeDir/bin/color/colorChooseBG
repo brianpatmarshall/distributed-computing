@@ -1,0 +1,15 @@
+#! /bin/bash
+# @(#) 
+#==========================================================================
+# File            : colorChooseBG
+# Description     : 
+#
+# Revision History: 
+#
+#   08 Sep 2024 - Brian Marshall
+#      Initial Version.
+#==========================================================================
+bg=${*:-$(shuf -n1 ~/.hidden/.favoriteBGs)}
+
+box eval "colorBG $bg"
+eval "colorBG $bg"

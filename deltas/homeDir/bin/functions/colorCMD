@@ -1,0 +1,9 @@
+colorCMD()
+{
+   local newCommandColor=${1:?Usage: colorCMD commandColor}
+   local currentCommandColor=$(colorCurrent | awk '{print $NF}')
+	 
+	 box colorPrompt $(colorCurrent | sed "s/$currentCommandColor/$newCommandColor/")
+	 colorPrompt $(colorCurrent | sed "s/$currentCommandColor/$newCommandColor/")
+}
+

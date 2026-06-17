@@ -1,0 +1,9 @@
+colorHost()
+{
+   local newHostColor=${1:?Usage: $0 hostColor}
+   local currentHostColor=$(colorCurrent | awk '{print $2}')
+	 
+	 box colorPrompt $(colorCurrent | sed "s/$currentHostColor/$newHostColor/")
+	 colorPrompt $(colorCurrent | sed "s/$currentHostColor/$newHostColor/")
+}
+

@@ -1,0 +1,15 @@
+# @(#) lfp num lists the n newest files in a path
+#============================================================
+# Function   : lfp 
+# Usage      : lfp <path> [num]
+# Description: lists the newest num files in the passed in dir
+#============================================================
+function lfp
+{
+   local dir=${1:-.}
+
+   \ls -ltr $dir | grep -v ^d | awk '{print $NF}' |  tail -${2:-1} | while read line
+                                                                     do
+                                                                        echo $dir/$line
+                                                                     done
+}

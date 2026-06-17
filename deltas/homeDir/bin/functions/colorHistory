@@ -1,0 +1,9 @@
+colorHistory()
+{
+   local newHistoryColor=${1:?Usage: $0 historyColor}
+   local currentHistoryColor=$(colorCurrent | awk '{print $1}')
+	 
+	 box colorPrompt $(colorCurrent | sed "s/$currentHistoryColor/$newHistoryColor/")
+	 colorPrompt $(colorCurrent | sed "s/$currentHistoryColor/$newHistoryColor/")
+}
+

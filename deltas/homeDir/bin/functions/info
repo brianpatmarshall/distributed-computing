@@ -1,0 +1,12 @@
+#============================================================
+# Function:    info
+# Usage   :    info <message>
+# Description: Print informational message
+#============================================================
+function info 
+{
+  RED='\033[0;31m'
+	NC='\033[0m' # No Color
+
+	echo -e "${CYAN}[INFO]${NC}  $*" 
+}

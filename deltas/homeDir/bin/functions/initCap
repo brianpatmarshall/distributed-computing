@@ -1,0 +1,22 @@
+# @(#) initCap string capitalizes the first character of string
+#============================================================
+# Function   : initCap 
+# Usage      : initCap <string>
+# Description: Capitalizes the first character of string
+#============================================================
+function initCap
+{
+  if (( $# > 0 ))
+  then
+    for arg in $*
+    do
+      #echo "$(expr "$arg" : '\(.\)' | tr [a-z] [A-Z])$(expr "$arg" : '.\(.*\)') "
+      echo "$(upper ${arg:0:1})${arg:1}"
+    done
+  else
+    while read token
+    do
+       initCap $token
+    done
+  fi
+}
