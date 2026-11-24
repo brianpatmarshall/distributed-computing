@@ -1,0 +1,985 @@
+#!/bin/bash
+
+# Set terminal background color (your original function)
+colorBG() {
+   local r=${1:-FF}
+   local g=${2:-FF} 
+   local b=${3:-FF}
+   echo -e "\e]11;rgb:$r/$g/$b\a"
+}
+
+# Set terminal foreground/text color
+colorFG() {
+   local r=${1:-00}
+   local g=${2:-00}
+   local b=${3:-00}
+   echo -e "\e]10;rgb:$r/$g/$b\a"
+}
+
+# Enhanced version with validation
+colorBGSafe() {
+   local r=${1:-FF}
+   local g=${2:-FF}
+   local b=${3:-FF}
+   
+   # Validate hex values
+   if [[ ! "$r" =~ ^[0-9A-Fa-f]{2}$ ]] || 
+      [[ ! "$g" =~ ^[0-9A-Fa-f]{2}$ ]] || 
+      [[ ! "$b" =~ ^[0-9A-Fa-f]{2}$ ]]; then
+       echo "Error: RGB values must be 2-digit hex (00-FF)" >&2
+       return 1
+   fi
+   
+   printf "\e]11;rgb:%s/%s/%s\a" "$r" "$g" "$b"
+}
+
+# Convert a single decimal value (0-255) to 2-digit hex
+dec2hex() {
+   printf "%02X" "$1"
+}
+
+# Set background using decimal RGB (0-255)
+colorBGDec() {
+   local r=${1:-255}
+   local g=${2:-255}
+   local b=${3:-255}
+
+   colorBG "$(dec2hex "$r")" "$(dec2hex "$g")" "$(dec2hex "$b")"
+}
+
+# Set LS_COLORS so ls output stays in the same family as the active scheme.
+# Args: di-color, ln-color, ex-color (256-color cube indices).
+# Each color* scheme below calls this to keep ls in family.
+colorLs() {
+    local di=$1 ln=$2 ex=$3
+    export LS_COLORS="di=01;38;5;${di}:ln=01;38;5;${ln}:ex=01;38;5;${ex}"
+}
+
+# Preset background colors
+colorBGRed()     { colorBG "FF" "00" "00"; }
+colorBGGreen()   { colorBG "00" "FF" "00"; }
+colorBGBlue()    { colorBG "00" "00" "FF"; }
+colorBGBlack()   { colorBG "00" "00" "00"; }
+colorBGWhite()   { colorBG "FF" "FF" "FF"; }
+colorBGGray()    { colorBG "80" "80" "80"; }
+colorBGDark()    { colorBG "1A" "1A" "1A"; }  # Dark gray
+
+# Dark blue shades — named for paint/heraldic colors
+colorBGNavy()         { colorBG "00" "00" "50"; }   # classic dark navy
+colorBGMidnight()     { colorBG "15" "15" "5C"; }   # midnight blue, slight grey lift
+colorBGPrussian()     { colorBG "00" "31" "53"; }   # Prussian blue (G hint, warmer)
+colorBGDeepOcean()    { colorBG "00" "22" "4D"; }   # deep ocean — pure cool blue
+colorBGSapphire()     { colorBG "0F" "24" "5C"; }   # dark sapphire
+colorBGCobalt()       { colorBG "0A" "1E" "78"; }   # cobalt — brightest of this set
+
+# Dark green shades — paint/forestry colors, no brown territory
+colorBGRacingGreen()  { colorBG "00" "42" "25"; }   # British Racing Green
+colorBGBottleGreen()  { colorBG "00" "4A" "35"; }   # bottle (leans teal)
+colorBGPine()         { colorBG "01" "5C" "4E"; }   # pine — deepest teal-green
+colorBGForest()       { colorBG "0F" "4A" "1F"; }   # forest — pure dark green
+colorBGEvergreen()    { colorBG "08" "38" "18"; }   # evergreen — darker forest
+colorBGMyrtle()       { colorBG "21" "42" "1E"; }   # myrtle — soft mid-dark green
+
+# Dark red shades — wine/blood/clay names, kept clear of brown
+colorBGMaroon()       { colorBG "50" "00" "00"; }   # pure maroon (no G/B = no brown)
+colorBGBurgundy()     { colorBG "50" "00" "18"; }   # burgundy — slight B for depth
+colorBGOxblood()      { colorBG "4A" "00" "0A"; }   # oxblood — deeper than burgundy
+colorBGWine()         { colorBG "60" "12" "24"; }   # wine red
+colorBGCrimsonDark()  { colorBG "70" "00" "18"; }   # dark crimson
+colorBGSangria()      { colorBG "5C" "00" "06"; }   # sangria — saturated red, B trace
+
+# Even darker blue shades — channel max 20-48
+colorBGAbyss()        { colorBG "00" "00" "14"; }   # almost-black with B hint
+colorBGInk()          { colorBG "04" "04" "18"; }   # inky blue
+colorBGNocturne()     { colorBG "06" "08" "24"; }   # night sky blue
+colorBGDeepSea()      { colorBG "00" "0E" "24"; }   # deep sea (slight teal)
+colorBGDusk()         { colorBG "0A" "0C" "30" ; }  # dusk transition
+
+# Even darker green shades — kept B > R to stay clear of brown
+colorBGMoss()         { colorBG "04" "14" "08"; }   # darkest moss
+colorBGFern()         { colorBG "06" "18" "0C"; }   # dark fern
+colorBGCypress()      { colorBG "02" "1E" "12"; }   # cypress (teal lift)
+colorBGSpruce()       { colorBG "04" "1E" "18"; }   # spruce
+colorBGEmerald()      { colorBG "02" "24" "1A"; }   # dark emerald
+
+# Even darker red shades — pure-red-dominant, no brown
+colorBGSanguine()     { colorBG "14" "00" "02"; }   # very dark blood-red
+colorBGCarmine()      { colorBG "1A" "02" "0A"; }   # carmine
+colorBGGarnet()       { colorBG "24" "02" "06"; }   # garnet
+colorBGRuby()         { colorBG "2C" "04" "0C"; }   # ruby
+colorBGCabernet()     { colorBG "30" "04" "14"; }   # cabernet wine
+
+# Shadow palette — inspired by 07 1D 1E (very dim cyan).
+# Pattern: one dominant channel (~0x1E/30), one mid (~0x0C/12), one near-zero
+# (~0x07/7).  The mid-channel lift is what gives the original its depth.
+colorBGShadowGreen()  { colorBG "07" "1E" "0C"; }   # G dominant, B mid
+colorBGShadowBlue()   { colorBG "07" "0C" "1E"; }   # B dominant, G mid
+colorBGShadowRed()    { colorBG "1E" "07" "0C"; }   # R dominant, B mid (B mid avoids brown)
+
+# Reset to terminal default colors
+colorReset() {
+   # Reset background to default
+   echo -e "\e]111\a"
+   # Reset foreground to default  
+   echo -e "\e]110\a"
+}
+
+# --- OSC color query helpers ---
+# Send an OSC ?-query and capture the terminal's response.  The response
+# arrives as input on /dev/tty, so we have to put the line discipline in
+# raw, no-echo mode to read it cleanly — otherwise the terminal buffers
+# the bytes (canonical mode waits for newline) or echoes them on screen.
+#
+# Usage internally:  _queryColorOSC 11   (BG)
+#                    _queryColorOSC 10   (FG)
+# Prints "RR GG BB" hex on stdout, returns 0 on success.
+_queryColorOSC() {
+    local osc=$1 response old_stty
+
+    if ! old_stty=$(stty -g </dev/tty 2>/dev/null); then
+        echo "_queryColorOSC: not running on a terminal" >&2
+        return 1
+    fi
+
+    # min 0 time 5 = read-with-timeout, 0.5s; -icanon -echo = raw mode.
+    stty -icanon -echo min 0 time 5 </dev/tty
+    printf '\e]%s;?\a' "$osc" >/dev/tty
+    response=$(head -c 64 </dev/tty)
+    stty "$old_stty" </dev/tty
+
+    if [[ $response =~ rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+) ]]; then
+        local r=${BASH_REMATCH[1]} g=${BASH_REMATCH[2]} b=${BASH_REMATCH[3]}
+        # xterm-family responds with 4 hex digits per channel (16-bit
+        # scaled).  Take the high byte for normal 8-bit values.
+        (( ${#r} == 4 )) && { r=${r:0:2}; g=${g:0:2}; b=${b:0:2}; }
+        printf '%s %s %s\n' "$r" "$g" "$b"
+        return 0
+    fi
+
+    echo "_queryColorOSC: no/invalid response (got: ${response@Q})" >&2
+    return 1
+}
+
+# Print current BG / FG as "RR GG BB" hex.
+queryBG() { _queryColorOSC 11; }
+queryFG() { _queryColorOSC 10; }
+
+# Same as queryBG/queryFG but in decimal.
+queryBGDec() {
+    local rgb r g b
+    rgb=$(_queryColorOSC 11) || return 1
+    read -r r g b <<< "$rgb"
+    printf '%d %d %d\n' "$((16#$r))" "$((16#$g))" "$((16#$b))"
+}
+queryFGDec() {
+    local rgb r g b
+    rgb=$(_queryColorOSC 10) || return 1
+    read -r r g b <<< "$rgb"
+    printf '%d %d %d\n' "$((16#$r))" "$((16#$g))" "$((16#$b))"
+}
+
+# Show both — the convenience function.
+colorSave() {
+    local bg fg
+    bg=$(queryBG) && echo "BG: $bg"
+    fg=$(queryFG) && echo "FG: $fg"
+}
+
+# Popular color schemes
+colorSchemeDark() {
+   colorBG "1A" "1A" "1A"  # Dark background
+   colorFG "E0" "E0" "E0"  # Light text
+}
+
+colorSchemeMatrix() {
+   colorBG "00" "00" "00"  # Black background
+   colorFG "00" "FF" "00"  # Green text
+}
+
+colorSchemeTerminal() {
+   colorBG "00" "00" "00"  # Black background
+   colorFG "C0" "C0" "C0"  # Light gray text
+}
+
+# *ish family: brightness-laddered prompts in one hue family.
+# BG = monochromatic dark version of the FG hue, modeled after colorDarkBlueSpace's
+# pattern (one dominant channel ~0x12, suppressed channels at 0x02; tertiary
+# hues use 0x0A for the mid channel).  This keeps the BG quiet and uniform
+# in feel across the family — each scheme reads as "near-black with a
+# distinct hue identity," in line with the prompt rather than fighting it.
+
+# Primary hues (single dominant channel).
+
+colorDarkPurpleCranberry() {
+   colorBG 12 02 20              # purple-red — colorDarkBlueSpace pattern, B over R
+   colorPrompt 52 124 209 167
+   colorLs 209 124 167           # red-family ls colors
+}
+
+colorDarkBlueLake() {
+   colorBG 02 10 16              # darker green, B lift keeps it forest, not olive
+   colorPrompt 28 41 154 49
+   colorLs 154 41 49             # green-family ls colors
+}
+
+colorDeepBlueNavy() {
+   colorBG 02 02 10              # much darker, hint still clearly blue
+   colorPrompt 18 33 117 45
+   colorLs 117 33 45             # blue-family ls colors
+}
+
+# Secondary hues (two dominant channels — complete the 6-hue wheel).
+
+colorDeepRedMarigold() {
+   colorBG 0C 02 08              # near-black plum — gold prompt against a rose
+                                 # hint instead of the old olive (dim yellow = brown)
+   colorPrompt 100 143 228 214
+   colorLs 228 143 214           # yellow-family ls colors
+}
+
+colorDeepTealCyan() {
+   colorBG 02 12 12              # dark cyan — G+B dominant
+   colorPrompt 30 73 123 39
+   colorLs 123 73 39             # cyan-family ls colors
+}
+
+colorDeepPurpleMagenta() {
+   colorBG 12 02 12              # dark magenta — R+B dominant
+   colorPrompt 90 133 213 99
+   colorLs 213 133 207           # magenta-family ls (ex=207, NOT prompt's 41 green)
+}
+
+# Tertiary hues (one dominant + one mid channel).
+# Note: dim warm colors collapse into brown by perceptual physics — there's
+# no value of (R high, G mid, B low) at dark-BG brightness that doesn't read
+# as "brown."  So the warm-prompt schemes (Marigold, Ember) sit on rose/red
+# BGs with B >= G instead of on orange or yellow BGs, and Lime keeps B > R.
+
+colorDeepRedEmber() {
+   colorBG 0E 02 04              # near-black red — embers glowing in the dark,
+                                 # G at the floor and B over it so it can't go brown
+   colorPrompt 94 136 215 39
+   colorLs 215 136 208           # orange-family ls (ex=208, NOT prompt's 39 cyan)
+}
+
+colorDeepGreenLime() {
+   colorBG 02 08 04              # near-black green — B over R so the lime hint
+                                 # stays green instead of drifting olive
+   colorPrompt 70 112 191 207
+   colorLs 191 112 119           # lime-family ls (ex=119, NOT prompt's 207 magenta)
+}
+
+colorDeepBlueTeal() {
+   colorBG 02 0A 12              # dark teal — B dominant, G mid
+   colorPrompt 31 74 153 209
+   colorLs 153 74 51             # teal-family ls (ex=51, NOT prompt's 209 peach)
+}
+
+colorDeepPurpleViolet() {
+   colorBG 0A 02 10              # much darker, R+B both lit so still clearly purple
+   colorPrompt 53 91 177 135
+   colorLs 177 91 135            # purple-family ls colors
+}
+
+colorDarkPurpleOrchid() {
+   colorBG 12 02 1A              # dark pink — R dominant, B mid
+   colorPrompt 89 168 218 200    # cmd accent now bright pink-magenta (was 47 = bright green)
+   colorLs 218 168 200           # pink-family ls colors
+}
+
+# Themed schemes — pick a mood, not a hue rotation.
+# Unlike the *ish family, these break the matched-brightness-ladder rule
+# in favor of evoking a specific feel.
+
+colorDarkBlueSpace() {
+   colorBG 02 02 18           # near-black with a B-only hint (deepest BG)
+   colorPrompt 19 99 51 231   # deep blue → nebula purple → cyan → starlight
+   colorLs 51 99 231          # path bright cyan, host nebula purple, exec starlight white
+}
+
+colorPaleRedSunset() {
+   colorBG 3C 06 28           # rose-magenta sky — G near zero so it can't go
+                              # brown, B lift for the magenta of the afterglow
+   colorPrompt 88 208 220 213 # dark red → orange → gold → pink
+   colorLs 220 208 213        # gold dirs, orange links, pink execs — sunset palette
+}
+
+colorDarkRedMorning() {
+   colorBG 1C 04 12           # first sunlight — gold light against a rose dawn
+                              # sky.  G near zero keeps it from the dark-gold
+                              # brown it used to be (1C 14 02)
+   colorPrompt 58 136 178 229 # dark olive-gold -> amber -> gold -> cream
+   colorLs 178 136 229        # dirs gold, links amber, execs cream
+}
+
+colorPaleBlueMoon() {
+   colorBG 1C 24 38           # slate blue-grey — R+G lift vs Tealish's pure teal
+   colorPrompt 60 103 153 195 # silver ladder: dim → bright
+   colorLs 153 103 195        # silver ladder — dirs lighter, links mid, execs brightest
+}
+
+# ============================================================================
+# Natural-scene schemes — 17 hand-tuned BG/FG pairs derived from
+# 25 favorite combinations.  Two BG families (forest-teal and navy-blue)
+# crossed with three prompt families (green ladder, lime-cyan, warm sunset)
+# produce moods that map to outdoor light at different times of day.
+# Cool BGs only; cmdline always pops via system bright (10) or cube cream (229).
+# ============================================================================
+
+# --- Forest family (forest-teal BGs, green-family prompts) ---
+
+colorDarkGreenMeadow() {
+   colorBG 0C 18 15           # forest-teal — sunlit grass
+   colorPrompt 40 82 84 229   # bright lime-cyan ladder, cream cmd
+   colorLs 84 82 229          # lime-cyan family with cream exec accent
+}
+
+colorDarkGreenFern() {
+   colorBG 0C 18 15           # forest-teal — shaded understory
+   colorPrompt 28 41 154 10   # green ladder, system-bright-green cmd
+   colorLs 154 41 10          # green ladder, system-bright-green exec
+}
+
+colorDarkGreenPineForest() {
+   colorBG 03 1F 17           # deep conifer green
+   colorPrompt 28 41 154 10
+   colorLs 154 41 10
+}
+
+colorDarkGreenDeepForest() {
+   colorBG 03 17 11           # darkest forest
+   colorPrompt 28 41 154 10
+   colorLs 154 41 10
+}
+
+colorDarkGreenMossyStone() {
+   colorBG 05 15 13           # very dim mossy stone
+   colorPrompt 76 42 155 49   # lime-green ladder, cyan-green cmd
+   colorLs 155 42 49          # lime-green family
+}
+
+# --- Forest-at-sunset (forest-teal BGs, warm sunset prompt) ---
+
+colorDarkGreenAutumn() {
+   colorBG 0F 1E 15           # forest BG with sunset glow — fall foliage
+   colorPrompt 196 208 220 229
+   colorLs 220 208 229        # warm sunset palette: gold/orange/cream
+}
+
+colorDarkGreenAutumnFern() {
+   colorBG 0C 18 15           # warmer fern bed at sunset
+   colorPrompt 196 208 220 229
+   colorLs 220 208 229
+}
+
+colorDarkGreenForestSunset() {
+   colorBG 03 1F 17           # last light through deep pines
+   colorPrompt 196 208 220 229
+   colorLs 220 208 229
+}
+
+# --- Sea/sky family (navy BGs, varied prompts) ---
+
+colorDarkBlueTwilight() {
+   colorBG 02 02 18           # magic hour — sunset over deep navy
+   colorPrompt 196 208 220 229
+   colorLs 220 208 229
+}
+
+colorDarkBlueMoonlitSea() {
+   colorBG 02 02 18           # cool moon on water
+   colorPrompt 40 82 84 229
+   colorLs 84 82 229
+}
+
+colorDarkBlueMidnight() {
+   colorBG 02 02 18           # forest under night sky
+   colorPrompt 28 41 154 10
+   colorLs 154 41 10
+}
+
+colorDarkBlueOcean() {
+   colorBG 02 04 18           # deep ocean surface
+   colorPrompt 40 82 84 229
+   colorLs 84 82 229
+}
+
+colorDarkBlueKelpForest() {
+   colorBG 06 0C 21           # deep navy with a G lift — water below the surface
+   colorPrompt 28 41 154 86   # green ladder rising through the water, aquamarine cmd
+   colorLs 154 41 86          # dirs yellow-green kelp, links spring green, execs aquamarine
+}
+
+# --- Twilight/aurora family (purple/blue-grey BGs) ---
+
+colorPalePurpleAurora() {
+   colorBG 15 11 27           # dim purple — northern lights
+   colorPrompt 40 82 84 229
+   colorLs 84 82 229
+}
+
+colorPalePurpleDuskMeadow() {
+   colorBG 15 11 27           # meadow at dusk turning purple
+   colorPrompt 28 41 154 10
+   colorLs 154 41 10
+}
+
+colorDeepBlueHour() {
+   colorBG 0B 0C 14           # cool blue-grey — minutes before dawn
+   colorPrompt 76 42 155 49
+   colorLs 155 42 49
+}
+
+colorDarkTealMist() {
+   colorBG 12 1D 1E           # cyan-grey — misty morning
+   colorPrompt 40 82 84 229
+   colorLs 84 82 229
+}
+
+colorPaleBlueOpenSky() {
+   colorBG 15 27 3F           # brighter sky-blue — daylight horizon
+   colorPrompt 40 82 84 229
+   colorLs 84 82 229
+}
+
+# ============================================================================
+# Soft schemes — one per Pale scheme, same BG, but the prompt ladder swapped
+# for muted, desaturated cube colors (the 5f/87/af/d7 steps) over a narrower
+# brightness range.  Same mood as the Pale original, lower contrast.
+# ============================================================================
+
+colorSoftBlueMoon() {
+   colorBG 1C 24 38           # colorPaleBlueMoon's slate
+   colorPrompt 102 103 146 188 # grey -> grey-lavender -> pale periwinkle -> light grey
+   colorLs 146 103 188
+}
+
+colorSoftBlueOpenSky() {
+   colorBG 15 27 3F           # colorPaleBlueOpenSky's daylight horizon
+   colorPrompt 65 108 151 187 # sage ladder -> pale khaki cmd
+   colorLs 151 108 187
+}
+
+colorSoftPurpleAurora() {
+   colorBG 15 11 27           # colorPalePurpleAurora's dim purple
+   colorPrompt 66 109 152 189 # muted teal ladder -> pale lavender cmd
+   colorLs 152 109 189
+}
+
+colorSoftPurpleDuskMeadow() {
+   colorBG 15 11 27           # colorPalePurpleDuskMeadow's dim purple
+   colorPrompt 65 108 150 194 # sage -> soft green -> pale lime -> pale mint
+   colorLs 150 108 194
+}
+
+colorSoftRedSunset() {
+   colorBG 3C 06 28           # colorPaleRedSunset's rose-magenta sky
+   colorPrompt 131 173 180 223 # dusty rose -> terracotta -> tan -> pale peach
+   colorLs 180 173 223
+}
+
+# ============================================================================
+# Pastel schemes — an existing Dark BG under a prompt built only from the
+# pastel cube steps (AF / D7 / FF, so every channel is lit and the gaps are
+# small).  Light and gentle: bright enough to read, too soft to glare.
+# ============================================================================
+
+colorPastelRedSugarPlum() {
+   colorBG 1A 00 16           # colorDarkRedPlum's BG
+   colorPrompt 146 182 218 225 # lavender -> orchid -> pastel pink -> pale pink-lilac
+   colorLs 218 182 225        # dirs pastel pink, links orchid, execs pale pink-lilac
+}
+
+colorPastelBlueLagoon() {
+   colorBG 04 12 16           # colorDarkBlueLagoon's BG
+   colorPrompt 152 153 159 195 # pale teal -> powder blue -> pale aqua -> ice
+   colorLs 159 153 195        # dirs pale aqua, links powder blue, execs ice
+}
+
+# ============================================================================
+# Lime-ladder schemes — the lime -> jade -> bright-lime prompt (76 42 155)
+# over saturated BGs: one channel leads and the other two stay near zero,
+# so the BG reads as a clear, vivid dark hue rather than a greyed one.
+# Modeled on two favorites, colorPaleBlueIris and colorDeepGreenIvy (the
+# first two below).  Only the BG and the aqua-family cmd color change from
+# scheme to scheme.
+# ============================================================================
+
+colorPaleBlueIris() {
+   colorBG 08 04 24           # iris — saturated blue-violet: B leads, R just over
+                              # G for the violet lean, both near the floor
+   colorPrompt 76 42 155 49   # lime -> jade -> bright lime, aquamarine cmd
+   colorLs 155 42 49
+}
+
+colorDeepGreenIvy() {
+   colorBG 04 0F 07           # ivy — very dark saturated green, a B trace over R
+                              # keeping it leafy rather than olive
+   colorPrompt 76 42 155 30   # lime ladder, deep teal cmd — quieter than the
+                              # others, so the typed command doesn't glare
+   colorLs 155 42 30
+}
+
+colorPaleBlueUltramarine() {
+   colorBG 04 06 24           # ultramarine — the violet lift of favorite #1
+                              # swapped for a G trace, so it reads pure blue
+   colorPrompt 76 42 155 49   # lime -> jade -> bright lime, aquamarine cmd
+   colorLs 155 42 49          # dirs bright lime, links jade, execs aquamarine
+}
+
+colorPalePurpleNightshade() {
+   colorBG 14 04 24           # nightshade — favorite #1 pushed past violet into
+                              # purple (R at ~55% of B); green leaves on a purple
+                              # flower is the whole idea
+   colorPrompt 76 42 155 50   # lime ladder, pale-aqua cmd
+   colorLs 155 42 50
+}
+
+# Nightshade variations — named for its botanical family (Solanaceae), same
+# prompt.  One darker, then R stepped up toward B: violet -> red-violet ->
+# nearly magenta, stopping short of R = B.
+
+colorDarkPurpleAubergine() {
+   colorBG 10 03 1C           # aubergine — Nightshade's hue one step darker,
+                              # dropping it from the Pale tier into Dark
+   colorPrompt 76 42 155 50
+   colorLs 155 42 50
+}
+
+colorPalePurpleBelladonna() {
+   colorBG 1A 04 24           # belladonna — R raised to ~70% of B, the dusky
+                              # red-violet of the deadly nightshade flower
+   colorPrompt 76 42 155 50
+   colorLs 155 42 50
+}
+
+colorPalePurplePetunia() {
+   colorBG 20 04 24           # petunia — R almost level with B.  Still just
+                              # purple; R = B would tip it into magenta
+   colorPrompt 76 42 155 50
+   colorLs 155 42 50
+}
+
+colorDarkBlueCobalt() {
+   colorBG 06 08 1C           # cobalt — the same saturated blue one step darker,
+                              # dropping it from the Pale tier into Dark
+   colorPrompt 76 42 155 43   # lime ladder, sea-green cmd
+   colorLs 155 42 43
+}
+
+colorDeepGreenJade() {
+   colorBG 04 0F 0B           # jade — favorite #2 with B lifted toward G, a
+                              # cooler, bluer green than the forest original
+   colorPrompt 76 42 155 37   # lime ladder, teal cmd — between #2's 30 and 43
+   colorLs 155 42 37
+}
+
+colorDeepTealAbyss() {
+   colorBG 02 10 10           # abyss — G and B level, R at the floor: the dark
+                              # teal between favorite #2's green and the blues
+   colorPrompt 76 42 155 51   # lime ladder, bright cyan cmd to match the teal
+   colorLs 155 42 51
+}
+
+# ============================================================================
+# Jewel-on-grey schemes — the opposite of the lime-ladder idea: muted BGs
+# (all three channels within ~10 of each other, so they read as tinted grey)
+# under a prompt of saturated jewel tones.  Built around the favorite
+# colorDarkGreenEucalyptus (sapphire accents: violet, sky, blue-violet,
+# aqua).  Each variation gets its own gemstone, usually one that contrasts
+# with the BG's hue, and the BGs spread across hue and tier while staying
+# muted.
+# ============================================================================
+
+colorDarkGreenEucalyptus() {
+   colorBG 16 1D 19           # eucalyptus — grey-green leaf, G leads by only 7,
+                              # B over R keeps it cool and away from olive
+   colorPrompt 99 81 63 50    # violet, sky blue, blue-violet, aqua
+   colorLs 81 99 50           # dirs sky blue, links violet, execs aqua
+}
+
+colorDeepGreenJuniper() {
+   colorBG 08 14 0E           # juniper — Eucalyptus in deep shade, darker and a
+                              # little greener
+   colorPrompt 132 168 204 218 # ruby: dusty rose -> rose -> ruby -> pale pink
+   colorLs 204 168 218        # the complement: red jewels on a green-grey
+}
+
+colorPaleGreenLichen() {
+   colorBG 20 2C 22           # lichen — Eucalyptus in daylight, Pale tier,
+                              # B still over R to keep it away from olive
+   colorPrompt 97 135 171 183 # amethyst: plum -> violet -> orchid -> pale lilac
+   colorLs 171 135 183
+}
+
+colorDarkTealSeaGlass() {
+   colorBG 10 1F 1F           # sea glass — G and B level, frosted teal-grey
+   colorPrompt 167 209 215 222 # coral: brick -> coral -> apricot -> pale gold
+   colorLs 215 209 222        # warm stones on a cool beach
+}
+
+colorPaleBlueSlate() {
+   colorBG 18 1E 2C           # slate — cool blue-grey roof tile, lifted into
+                              # the Pale tier
+   colorPrompt 35 42 48 121   # emerald: jade -> sea green -> emerald -> mint
+   colorLs 48 42 121
+}
+
+colorDarkPurpleHeather() {
+   colorBG 1C 12 21           # heather — lavender-grey moorland, B leads with
+                              # R close behind
+   colorPrompt 136 178 220 229 # citrine: dark gold -> gold -> bright gold -> cream
+   colorLs 220 178 229        # yellow is purple's complement, so it pops
+}
+
+# ============================================================================
+# Pan Am Clipper schemes — the airline's livery: Pan Am blue globe, white
+# fuselage, polished-aluminium belly.  Each is named for a Pan Am aircraft,
+# which were all "Clipper ___" after the 19th-century clipper ships.  Shared
+# prompt is a Pan Am blue ladder (navy -> Pan Am blue -> bright blue); only
+# the BG and the cmd color change, chosen to fit each aircraft's name.
+# "Clipper" leads the name part so the family stays findable — see
+# colorClippers.
+# ============================================================================
+
+colorClippers() {
+   # List the Pan Am Clipper schemes
+   compgen -A function | grep 'Clipper' | grep -v '^colorClippers$'
+}
+
+colorDarkBlueClipperAmerica() {
+   colorBG 00 11 1E           # Pan Am blue (#0067B1) held at its true hue ratio,
+                              # R at zero.  Greener and brighter than French
+                              # Racing Blue's 00 0D 1A
+   colorPrompt 18 25 32 231   # navy -> Pan Am blue -> bright blue, livery-white cmd
+   colorLs 32 25 231          # dirs bright blue, links Pan Am blue, execs white
+}
+
+colorDeepBlueClipperMidnightSun() {
+   colorBG 02 03 12           # near-black navy — the arctic night sky
+   colorPrompt 18 25 32 220   # Pan Am blue ladder, gold cmd: the sun that
+                              # never quite sets
+   colorLs 32 25 220
+}
+
+colorDarkBlueClipperMorningLight() {
+   colorBG 10 12 1E           # blue-grey before dawn.  Kept blue so it doesn't
+                              # repeat colorDarkRedMorning's rose sky
+   colorPrompt 18 25 32 223   # Pan Am blue ladder, pale-peach first-light cmd
+   colorLs 32 25 223
+}
+
+colorPaleBlueClipperFlyingCloud() {
+   colorBG 14 18 22           # muted cloud blue-grey, lifted into the Pale tier
+   colorPrompt 18 25 32 255   # Pan Am blue ladder, near-white cloud cmd
+   colorLs 32 25 255
+}
+
+colorDeepBlueClipperSeaWitch() {
+   colorBG 02 10 14           # dark sea — blue with a strong G lift, darker
+                              # than Peacock and Lagoon so it stays clear of them
+   colorPrompt 18 25 32 51    # Pan Am blue ladder, bright cyan spray cmd
+   colorLs 32 25 51
+}
+
+colorDarkGrayClipperChina() {
+   colorBG 14 14 16           # polished aluminium of the 1935 China Clipper
+                              # flying boat at night — grey with a B trace
+   colorPrompt 25 32 250 231  # Pan Am blue -> bright blue -> silver -> white
+   colorLs 32 25 231
+}
+
+colorDarkRedClipperRedJacket() {
+   colorBG 1E 00 0A           # Red Jacket — red with G at zero and a small B
+                              # lift; between Oxblood and Rust, and no brown
+   colorPrompt 52 125 168 231 # the red ladder (blue wouldn't read on red),
+                              # with the family's livery-white cmd
+   colorLs 168 125 231        # dirs rose, links wine, execs white
+}
+
+# ============================================================================
+# Matched-hue schemes — BG and prompt share one hue family.  The BG is a
+# dark version of the prompt's own hue, so nothing on screen fights anything
+# else; the ladder carries all contrast.
+# Modeled on the reference pair `colorBG 06 0C 21; colorPrompt 28 41 154 157`
+# — dominant channel around 0x21, ladder climbing dim -> bright -> pale.
+# ============================================================================
+
+# --- Dark green family ---
+
+colorDarkGreenMoss() {
+   colorBG 0E 21 0A           # moss — G dominant with an R lift (yellow-green),
+                              # B kept lowest so it reads mossy, not teal
+   colorPrompt 28 41 154 157  # dark green -> spring green -> yellow-green -> pale green
+   colorLs 154 41 157         # dirs yellow-green, links spring green, execs pale green
+}
+
+colorDarkGreenSpinach() {
+   colorBG 06 21 14           # spinach — G dominant with a B lift (blue-green),
+                              # R lowest for a deeper, cooler leaf tone
+   colorPrompt 22 35 78 157   # dark green -> sea green -> bright sea green -> pale green
+   colorLs 78 35 157          # dirs bright sea green, links sea green, execs pale green
+}
+
+colorDarkGreenRacing() {
+   colorBG 00 1A 0F           # British Racing Green (#004225) held at its true hue
+                              # ratio — the darkest of this family.  R=0 is the BRG
+                              # signature; B at ~half G gives the teal lift
+   colorPrompt 29 36 42 158   # racing green -> jade -> bright jade -> pale mint
+   colorLs 42 36 158          # dirs bright jade, links jade, execs pale mint
+}
+
+# Spinach variations — same prompt as colorDarkGreenSpinach, BG dropped to a
+# G of 0x16 and the B lift stepped up across the three: pure dark green ->
+# hint of blue -> blue nearly level with green.
+
+colorDarkGreenCollard() {
+   colorBG 04 16 0A           # collard — darker than Spinach with the B lift
+                              # trimmed, so it reads as plain deep green
+   colorPrompt 22 35 78 157
+   colorLs 78 35 157
+}
+
+colorDarkGreenKale() {
+   colorBG 04 16 10           # kale — darker green with a hint of blue, the
+                              # dusty blue-green of a kale leaf
+   colorPrompt 22 35 78 157
+   colorLs 78 35 157
+}
+
+colorDarkGreenSeaKale() {
+   colorBG 04 16 15           # sea kale — B almost level with G, the glaucous
+                              # blue-green of the coastal plant.  Still just
+                              # green-dominant; B = G would be Verdigris teal
+   colorPrompt 22 35 78 157
+   colorLs 78 35 157
+}
+
+# --- Dark blue family ---
+# Structural translations of the three greens above: the dominant channel
+# moves G -> B, and each green's secondary lift moves with it.  Moss leans
+# warm off green, so Indigo leans warm (violet) off blue; Spinach and Racing
+# lean cool off green, so Prussian and Racing lean cool (teal) off blue.
+
+colorDarkBlueIndigo() {
+   colorBG 0E 0A 21           # indigo — B dominant with an R lift (violet-leaning),
+                              # G lowest.  Muted, the way moss is muted
+   colorPrompt 19 26 99 147   # deep blue -> azure -> periwinkle -> pale periwinkle
+   colorLs 99 26 147          # dirs periwinkle, links azure, execs pale periwinkle
+}
+
+colorDarkBluePrussian() {
+   colorBG 06 14 21           # Prussian (#003153) — B dominant with a G lift
+                              # (teal-leaning), R lowest for a deeper, cooler tone
+   colorPrompt 18 25 68 147   # navy -> steel blue -> light steel -> pale periwinkle
+   colorLs 68 25 147          # dirs light steel, links steel blue, execs pale periwinkle
+}
+
+# Prussian variations — mirror the Spinach variations with G and B swapped.
+# Same prompt as colorDarkBluePrussian, BG dropped to a B of 0x16 and the G
+# lift stepped up across them: pure dark blue -> hint of green -> more green
+# (Lagoon) -> green nearly level with blue.
+
+colorDarkBlueSapphire() {
+   colorBG 04 0A 16           # sapphire — darker than Prussian with the G lift
+                              # trimmed, so it reads as plain deep blue
+   colorPrompt 18 25 68 147
+   colorLs 68 25 147
+}
+
+colorDarkBluePetrol() {
+   colorBG 04 10 16           # petrol — darker blue with a hint of green, the
+                              # greyed blue-green of petrol blue
+   colorPrompt 18 25 68 147
+   colorLs 68 25 147
+}
+
+colorDarkBlueLagoon() {
+   colorBG 04 12 16           # lagoon — Peacock pulled back.  Between Petrol and
+                              # Peacock, and clear of Sea Kale's 04 16 15
+   colorPrompt 18 25 68 147
+   colorLs 68 25 147
+}
+
+colorDarkBluePeacock() {
+   colorBG 04 15 16           # peacock — G almost level with B, the deep
+                              # blue-green of a peacock's neck.  Still just
+                              # blue-dominant; G = B would be Verdigris teal
+   colorPrompt 18 25 68 147
+   colorLs 68 25 147
+}
+
+colorDarkBlueRacing() {
+   colorBG 00 0D 1A           # French Racing Blue (#0055A4) held at its true hue
+                              # ratio — the motorsport counterpart to BRG, and like
+                              # it the darkest of its family.  R=0 is the signature
+                              # of both; G at ~half B gives the teal lift
+   colorPrompt 24 31 32 153   # racing blue -> cerulean -> bright cerulean -> pale sky
+   colorLs 32 31 153          # dirs bright cerulean, links cerulean, execs pale sky
+}
+
+# --- Dark red family ---
+# Same three-way split again: one warm-lift, one cool-lift, one named paint.
+# Rust and Burgundy both lean on B over G — any real G lift at this darkness
+# turns red to brown.
+# Reds run at a slightly higher dominant (0x1E) than the greens and blues
+# because red carries about a third of green's perceived luminance at the
+# same channel value — 1E 00 00 still reads darker than 00 1A 0F.
+
+colorDarkRedRust() {
+   colorBG 1E 02 0C           # rust — R dominant, B lift over a trace of G.  The
+                              # G trace keeps a hint of ember warmth; B carries
+                              # the rest so it reads red, not brown
+   colorPrompt 94 130 172 223 # dark amber -> ember -> bright amber -> pale peach
+   colorLs 172 130 223        # dirs bright amber, links ember, execs pale peach
+}
+
+colorDarkRedBurgundy() {
+   colorBG 1E 00 18           # burgundy — R dominant with a strong B lift
+                              # (wine-leaning), G at zero for a cooler, deeper tone
+   colorPrompt 52 125 168 217 # dark maroon -> wine -> rose -> pale pink
+   colorLs 168 125 217        # dirs rose, links wine, execs pale pink
+}
+
+# Burgundy variations — the red counterpart to the Spinach and Prussian
+# variations.  Same prompt as colorDarkRedBurgundy, BG at an R of 0x1A with
+# G at zero, and the B lift stepped up across the three: deep red ->
+# hint of blue -> blue nearly level with red.  G is zero throughout: at
+# this darkness any G plus a low R reads as brown rather than red.
+
+colorDarkRedOxblood() {
+   colorBG 1A 00 08           # oxblood — G at zero and R up for saturation, with
+                              # a small B lift that keeps it deep red, not brown
+   colorPrompt 52 125 168 217
+   colorLs 168 125 217
+}
+
+colorDarkRedMulberry() {
+   colorBG 1A 00 10           # mulberry — saturated dark red, G at zero, with a
+                              # hint of blue: the dark purple-red of the ripe fruit
+   colorPrompt 52 125 168 217
+   colorLs 168 125 217
+}
+
+colorDarkRedPlum() {
+   colorBG 1A 00 16           # plum — B almost level with R.  Still just
+                              # red-dominant; B = R would be magenta
+   colorPrompt 52 125 168 217
+   colorLs 168 125 217
+}
+
+colorDarkRedRacing() {
+   colorBG 1E 00 00           # Rosso Corsa (#D40000) — Italy's racing red, and the
+                              # third of the motorsport trio with BRG and French
+                              # Racing Blue.  Pure R with no lift at all, which is
+                              # the color's actual signature
+   colorPrompt 88 124 160 217 # every rung on the pure-red axis, brightness only
+   colorLs 160 124 217        # dirs Rosso Corsa, links deep red, execs pale pink
+}
+
+# --- Remaining hues — one member each, same construction ---
+
+colorDarkTealVerdigris() {
+   colorBG 00 1A 1A           # verdigris — the only two-channel-dominant BG here,
+                              # G and B equal with R at zero.  Sits exactly between
+                              # the green and blue families
+   colorPrompt 23 30 44 159   # every rung on the pure-teal axis, brightness only
+   colorLs 44 30 159          # dirs bright teal, links teal, execs pale ice
+}
+
+colorDarkPurpleAmethyst() {
+   colorBG 12 05 1E           # amethyst — B dominant with a strong R lift (60%),
+                              # G lowest.  Redder than Indigo (42%), bluer than
+                              # Circus magenta (87%)
+   colorPrompt 54 91 141 183  # deep violet -> amethyst -> light violet -> pale lilac
+   colorLs 141 91 183         # dirs light violet, links amethyst, execs pale lilac
+}
+
+colorDarkPurpleCircus() {
+   colorBG 1A 04 1E           # replaces the old colorCircus.  Same carnival energy,
+                              # but every color is one hue's variation instead of
+                              # four unrelated primaries — R and B both lit, G at floor
+   colorPrompt 53 127 170 218 # deep magenta -> magenta -> orchid -> pale rose
+   colorLs 170 127 218        # dirs orchid, links magenta, execs pale rose
+}
+
+colorDeepGrayGraphite() {
+   colorBG 12 12 14           # graphite — achromatic but for a faint B lift that
+                              # keeps it from going flat.  The strictest reading of
+                              # the rule: no hue left to vary, only brightness
+   colorPrompt 238 244 250 255 # charcoal -> slate -> silver -> near-white
+   colorLs 250 244 255        # dirs silver, links slate, execs near-white
+}
+
+# ============================================================================
+# Scheme names follow color<Tier><Hue><Name>:
+#   Tier — Deep (BG max channel <= 0x14), Dark (0x15-0x21), Pale (0x22+),
+#          Soft (a Pale BG with a muted prompt),
+#          Pastel (a Dark BG with a pastel prompt)
+#   Hue  — Green, Teal, Blue, Purple, Red, Gray — from the BG, not
+#          the prompt
+# Old names below are kept as one-line aliases.
+# ============================================================================
+colorLimeish()           { colorDeepGreenLime; }
+colorCyanish()           { colorDeepTealCyan; }
+colorBlueish()           { colorDeepBlueNavy; }
+colorTealish()           { colorDeepBlueTeal; }
+colorBlueHour()          { colorDeepBlueHour; }
+colorPurpleish()         { colorDeepPurpleViolet; }
+colorMagentish()         { colorDeepPurpleMagenta; }
+colorYellowish()         { colorDeepRedMarigold; }
+colorOrangeish()         { colorDeepRedEmber; }
+colorDarkGrayGraphite()  { colorDeepGrayGraphite; }
+colorMeadow()            { colorDarkGreenMeadow; }
+colorFern()              { colorDarkGreenFern; }
+colorAutumnFern()        { colorDarkGreenAutumnFern; }
+colorPineForest()        { colorDarkGreenPineForest; }
+colorDeepForest()        { colorDarkGreenDeepForest; }
+colorForestSunset()      { colorDarkGreenForestSunset; }
+colorAutumn()            { colorDarkGreenAutumn; }
+colorMoss()              { colorDarkGreenMossyStone; }
+colorMist()              { colorDarkTealMist; }
+colorGreenish()          { colorDarkBlueLake; }
+colorSpace()             { colorDarkBlueSpace; }
+colorTwilight()          { colorDarkBlueTwilight; }
+colorMoonlitSea()        { colorDarkBlueMoonlitSea; }
+colorMidnight()          { colorDarkBlueMidnight; }
+colorOcean()             { colorDarkBlueOcean; }
+colorKelpForest()        { colorDarkBlueKelpForest; }
+colorRedish()            { colorDarkPurpleCranberry; }
+colorPinkish()           { colorDarkPurpleOrchid; }
+colorDarkMagentaCircus() { colorDarkPurpleCircus; }
+colorMorning()           { colorDarkRedMorning; }
+colorMoon()              { colorPaleBlueMoon; }
+colorOpenSky()           { colorPaleBlueOpenSky; }
+colorAurora()            { colorPalePurpleAurora; }
+colorDuskMeadow()        { colorPalePurpleDuskMeadow; }
+colorSunset()            { colorPaleRedSunset; }
+
+# Example usage function
+showColorExamples() {
+   echo "Terminal Color Functions Demo:"
+   echo "Current colors:"
+   
+   echo "Setting red background..."
+   colorBGRed
+   sleep 1
+   
+   echo "Setting green background..." 
+   colorBGGreen
+   sleep 1
+   
+   echo "Setting dark theme..."
+   colorSchemeDark
+   sleep 2
+   
+   echo "Resetting to defaults..."
+   colorReset
+}
+
+# Usage examples:
+# colorBG FF 00 00           # Red background (hex)
+# colorBGDec 255 0 0         # Red background (decimal)  
+# colorBGRed                 # Preset red
+# colorSchemeDark            # Dark theme
+# colorReset                 # Reset to defaults
